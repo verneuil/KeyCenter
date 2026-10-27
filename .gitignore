@@ -1,0 +1,25 @@
+# Build output
+KeyCenter.exe
+keycenter.ico
+
+# Local vault and UI preferences
+keycenter.dat
+keycenter.dat.bak
+keycenter.dat.tmp
+keycenter.dat.safety
+keycenter.cfg
+
+# Logs and temporary files
+*.log
+*.tmp
+selftest.log
+_pkg/
+_release/
+_tmp/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
