@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <img src="assets/icon.png" width="96" height="96" alt="Key Center icon" />
 
@@ -39,7 +39,7 @@ No account, no cloud sync, no installer, no background service. One portable exe
 
 ## Why Key Center
 
-- **Local-first** — everything stays on your machine, encrypted at rest; the app makes no network requests.
+- **Local-first** — everything stays on your machine, encrypted at rest; the app itself makes no network requests, and GitHub links open in your system browser.
 - **Truly portable** — a single `KeyCenter.exe`; no installation, no registry writes, no user-profile clutter.
 - **Multi-key entries** — keep several keys for the same service or project in one entry and switch the default key anytime.
 - **Focused and complete** — categories, search, sorting, copy, reveal/hide, plaintext export, auto-lock and window memory, all included.
@@ -73,6 +73,17 @@ No account, no cloud sync, no installer, no background service. One portable exe
 - “Show all / Hide all” toggles the whole current list at once.
 - Clipboard content written by Key Center is cleared on lock or exit when it has not been replaced by something else.
 
+### Bilingual UI
+
+- **简体中文 / English** interface, covering the main window, unlock/setup screen, Settings, every dialog, prompt, error, empty state and export text;
+- Switch in Settings → top-right **中文 / English**; the choice applies after restarting the app;
+- All text comes from one shared dictionary, so future features can add both languages in one place.
+
+### Version and project link
+
+- The current version (for example `v1.8.5`) and a **GitHub** link appear in the main sidebar, the unlock screen and Settings;
+- Clicking GitHub opens the repository in your default browser — useful for source, issues and the latest release.
+
 ### Plaintext export
 
 - Use the download icon or `Ctrl + E` to export all keys into a category-grouped `.txt` file.
@@ -100,9 +111,13 @@ No account, no cloud sync, no installer, no background service. One portable exe
 |:---:|:---:|
 | ![Light theme](screenshots/main-light.png) | ![Dark theme](screenshots/main-dark.png) |
 
-| Settings | Search |
+| Settings (with language switch) | Search |
 |:---:|:---:|
-| ![Settings](screenshots/settings-light.png) | ![Search](screenshots/search-dark.png) |
+| ![Settings](screenshots/settings-light.png) | ![Search](screenshots/search-light.png) |
+
+| Add Key | English UI |
+|:---:|:---:|
+| ![Add Key](screenshots/entry-light.png) | ![English UI](screenshots/main-en.png) |
 
 ## Quick start
 
@@ -117,6 +132,7 @@ No account, no cloud sync, no installer, no background service. One portable exe
 2. Put `KeyCenter.exe` in any folder and double-click it.
 3. On first launch, set a **master password** (at least 6 characters).
 4. Enter that password on subsequent launches to see all your keys.
+5. The first launch uses Chinese by default; switch to **English** in the top-right of Settings and restart the app.
 
 No installation, no registry writes. To uninstall, simply delete the executable and its data files.
 
@@ -136,7 +152,7 @@ No installation, no registry writes. To uninstall, simply delete the executable 
 
 - **Encryption**: AES-256-CBC + PBKDF2-HMAC-SHA256 (210,000 iterations) + HMAC-SHA256 integrity check.
 - **The master password is never stored**; it is used only to derive the key. If you forget it, it cannot be recovered.
-- **Fully offline**: the app makes no network requests — no uploads, no telemetry, no update checks.
+- **Fully offline**: the app itself makes no network requests — no uploads, no telemetry, no update checks; GitHub links are handed to the system browser.
 - **Safe writes**: data is written to a temporary file, flushed, then committed; the previous version is kept as an encrypted `.bak` backup.
 - **Auto-lock**: after the configured idle time the vault locks; locking or exiting clears the session key and clipboard content written by Key Center.
 - **Single-instance protection**: only one instance can open the same data file, preventing concurrent writes.
@@ -151,7 +167,7 @@ For security reports, see [SECURITY.md](SECURITY.md).
 KeyCenter.exe        Main application (single portable file)
 keycenter.dat        Encrypted local data file (created after setting a password)
 keycenter.dat.bak    Encrypted backup of the last successful save
-keycenter.cfg        UI preferences (theme, window position, sidebar width, sort order); plain text, no secrets
+keycenter.cfg        UI preferences (theme, language, window position, sidebar width, sort order); plain text, no secrets
 ```
 
 - To move to another PC or folder, copy `KeyCenter.exe` and `keycenter.dat` together; `keycenter.cfg` is optional.
@@ -183,16 +199,26 @@ The build produces `KeyCenter.exe` and `keycenter.ico` in the project root.
 
 `SELFTEST OK` means the encryption, serialization and file I/O self-test passed.
 
+### Regression gate
+
+Automated checks for encryption, save, lock, export, theme, DPI and bilingual coverage:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\regression.ps1
+```
+
+A passing run prints `SELFTEST OK`, `LOCALIZATION/METADATA AUDIT OK` and `REGRESSION PASSED`. See [REGRESSION.md](REGRESSION.md) for the manual UI checklist.
+
 ## FAQ
 
 **I forgot my master password. Can it be recovered?**  
 No. Delete `keycenter.dat` and start over.
 
 **Does it upload anything?**  
-No. The application contains no network code; all data stays encrypted on your machine.
+No. The app itself makes no network requests; all data stays encrypted on your machine. GitHub links open in your system browser.
 
 **How do I move to a new PC?**  
-Copy `KeyCenter.exe` and `keycenter.dat` together. Include `keycenter.cfg` if you also want to keep window and theme preferences.
+Copy `KeyCenter.exe` and `keycenter.dat` together. Include `keycenter.cfg` if you also want to keep window, theme and language preferences.
 
 **Can I run it from a USB drive?**  
 Yes. It is fully portable; the data file lives next to the executable.

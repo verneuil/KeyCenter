@@ -919,16 +919,16 @@ namespace KeyCenter
             Cursor = Cursors.Hand;
             Click += delegate { OpenTitle(); };
 
-            copyBtn = UiKit.Icon(Ico.Copy, "复制");
+            copyBtn = UiKit.Icon(Ico.Copy, L.T("复制"));
             copyBtn.Name = "copy_" + item.Id;
             copyBtn.SurfaceCustom = true;
-            revealBtn = UiKit.Icon(Ico.View, "显示 / 隐藏");
+            revealBtn = UiKit.Icon(Ico.View, L.T("显示 / 隐藏"));
             revealBtn.Name = "reveal_" + item.Id;
             revealBtn.SurfaceCustom = true;
-            editBtn = UiKit.Icon(Ico.Edit, "编辑");
+            editBtn = UiKit.Icon(Ico.Edit, L.T("编辑"));
             editBtn.Name = "edit_" + item.Id;
             editBtn.SurfaceCustom = true;
-            delBtn = UiKit.Icon(Ico.Delete, "删除");
+            delBtn = UiKit.Icon(Ico.Delete, L.T("删除"));
             delBtn.Name = "delete_" + item.Id;
             delBtn.SurfaceCustom = true;
 
@@ -1042,9 +1042,9 @@ namespace KeyCenter
 
         private string MetaText()
         {
-            string cat = string.IsNullOrEmpty(Item.Category) ? "未分类" : Item.Category;
+            string cat = string.IsNullOrEmpty(Item.Category) ? L.T("未分类") : Item.Category;
             int count = Item.Keys == null ? 0 : Item.Keys.Count;
-            if (count > 1) cat += "   ·   " + count + " 个 Key";
+            if (count > 1) cat += "   ·   " + L.KeyCount(count);
             if (string.IsNullOrEmpty(Item.Note)) return cat;
             return cat + "   ·   " + Item.Note;
         }
@@ -1132,8 +1132,8 @@ namespace KeyCenter
         private double wheelAccum;
         private int visFirst = -1;
         private int visLast = -1;
-        private string emptyTitle = "还没有保存任何 Key";
-        private string emptySub = "点击右上角「添加」，保存你的第一个 API Key";
+        private string emptyTitle = L.T("还没有保存任何 Key");
+        private string emptySub = L.T("点击右上角「添加」，保存你的第一个 API Key");
 
         public Action<KeyItem> CopyAction;
         public Action<KeyItem> EditAction;

@@ -195,7 +195,7 @@ namespace KeyCenter
 
     internal class WrongPasswordException : Exception
     {
-        public WrongPasswordException() : base("密码错误或数据文件已损坏") { }
+        public WrongPasswordException() : base(L.T("密码错误或数据文件已损坏")) { }
     }
 
     /// <summary>会话内缓存的派生密钥：只在解锁/改密时做一次 PBKDF2，保存时直接复用。</summary>
@@ -215,7 +215,7 @@ namespace KeyCenter
         /// <summary>为后台保存任务复制一份独立密钥，避免任务期间锁定/改密清零影响写入。</summary>
         public KeyMaterial Clone()
         {
-            if (EncKey == null || MacKey == null || Salt == null) throw new InvalidOperationException("会话密钥已失效");
+            if (EncKey == null || MacKey == null || Salt == null) throw new InvalidOperationException(L.T("会话密钥已失效"));
             KeyMaterial k = new KeyMaterial();
             k.Salt = (byte[])Salt.Clone();
             k.EncKey = (byte[])EncKey.Clone();
@@ -297,7 +297,7 @@ namespace KeyCenter
             if (plain.Length > MaxFileBytes)
             {
                 Array.Clear(plain, 0, plain.Length);
-                throw new InvalidDataException("数据过大，已取消保存");
+                throw new InvalidDataException(L.T("数据过大，已取消保存"));
             }
             byte[] iv = RandomBytes(IvLen);
             byte[] cipher;
@@ -341,17 +341,17 @@ namespace KeyCenter
         public static VaultData Decrypt(byte[] file, KeyMaterial km)
         {
             if (file == null || file.Length < HeaderLen + MacLen)
-                throw new InvalidDataException("数据文件不完整或已损坏");
-            if (file.Length > MaxFileBytes) throw new InvalidDataException("数据文件过大，已拒绝读取");
+                throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
+            if (file.Length > MaxFileBytes) throw new InvalidDataException(L.T("数据文件过大，已拒绝读取"));
             for (int i = 0; i < Magic.Length; i++)
             {
-                if (file[i] != Magic[i]) throw new InvalidDataException("不是 Key Center 数据文件");
+                if (file[i] != Magic[i]) throw new InvalidDataException(L.T("不是 Key Center 数据文件"));
             }
             byte[] iv = new byte[IvLen];
             Buffer.BlockCopy(file, 4 + SaltLen, iv, 0, IvLen);
             int cipherLen = BitConverter.ToInt32(file, 4 + SaltLen + IvLen);
             if (cipherLen < 0 || HeaderLen + cipherLen + MacLen != file.Length)
-                throw new InvalidDataException("数据文件不完整或已损坏");
+                throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
 
             byte[] head = new byte[HeaderLen + cipherLen];
             Buffer.BlockCopy(file, 0, head, 0, head.Length);
@@ -393,7 +393,7 @@ namespace KeyCenter
         public static LoadResult LoadFromFileWithKeys(string path, string password)
         {
             byte[] bytes = ReadFileChecked(path);
-            if (bytes.Length < HeaderLen + MacLen) throw new InvalidDataException("数据文件不完整或已损坏");
+            if (bytes.Length < HeaderLen + MacLen) throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
             byte[] salt = new byte[SaltLen];
             Buffer.BlockCopy(bytes, 4, salt, 0, SaltLen);
             KeyMaterial km = DeriveMaterial(password, salt);
@@ -416,8 +416,8 @@ namespace KeyCenter
         private static byte[] ReadFileChecked(string path)
         {
             FileInfo fi = new FileInfo(path);
-            if (!fi.Exists) throw new FileNotFoundException("数据文件不存在", path);
-            if (fi.Length > MaxFileBytes) throw new InvalidDataException("数据文件过大，已拒绝读取");
+            if (!fi.Exists) throw new FileNotFoundException(L.T("数据文件不存在"), path);
+            if (fi.Length > MaxFileBytes) throw new InvalidDataException(L.T("数据文件过大，已拒绝读取"));
             return File.ReadAllBytes(path);
         }
 
@@ -428,11 +428,11 @@ namespace KeyCenter
 
         private static void WriteAtomic(string path, byte[] bytes)
         {
-            if (bytes == null || bytes.Length == 0) throw new InvalidDataException("待写入数据为空");
-            if (bytes.Length > MaxFileBytes) throw new InvalidDataException("数据文件过大，已取消保存");
+            if (bytes == null || bytes.Length == 0) throw new InvalidDataException(L.T("待写入数据为空"));
+            if (bytes.Length > MaxFileBytes) throw new InvalidDataException(L.T("数据文件过大，已取消保存"));
             string dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
-            if (Directory.Exists(path)) throw new IOException("数据文件路径被目录占用，无法保存");
+            if (Directory.Exists(path)) throw new IOException(L.T("数据文件路径被目录占用，无法保存"));
             string tmp = path + ".tmp";
             string bak = path + ".bak";
             string bakNew = path + ".bak.new";
@@ -513,8 +513,8 @@ namespace KeyCenter
                         catch (Exception rex) { restoreError = rex.Message; }
                     }
                     if (restoreError != null)
-                        throw new IOException("保存失败且原文件恢复失败；原文件保留在 " + safety + "。Replace 错误：" + (replaceError ?? "-") + "；原因：" + ex.Message + "；恢复错误：" + restoreError, ex);
-                    throw new IOException("保存失败，已保留/恢复原文件。Replace 错误：" + (replaceError ?? "-") + "；原因：" + ex.Message, ex);
+                        throw new IOException(L.T("保存失败且原文件恢复失败；原文件保留在 ") + safety + L.T("。Replace 错误：") + (replaceError ?? "-") + L.T("；原因：") + ex.Message + L.T("；恢复错误：") + restoreError, ex);
+                    throw new IOException(L.T("保存失败，已保留/恢复原文件。Replace 错误：") + (replaceError ?? "-") + L.T("；原因：") + ex.Message, ex);
                 }
                 try
                 {
@@ -557,8 +557,8 @@ namespace KeyCenter
                 using (MemoryStream ms = new MemoryStream(json))
                 {
                     VaultData d = (VaultData)ser.ReadObject(ms);
-                    if (d == null) throw new InvalidDataException("数据内容为空");
-                    if (d.Version > 2) throw new InvalidDataException("数据版本比当前程序新，请升级 Key Center 后再打开");
+                    if (d == null) throw new InvalidDataException(L.T("数据内容为空"));
+                    if (d.Version > 2) throw new InvalidDataException(L.T("数据版本比当前程序新，请升级 Key Center 后再打开"));
                     d.Normalize();
                     return d;
                 }
@@ -569,14 +569,14 @@ namespace KeyCenter
             }
             catch (Exception ex)
             {
-                throw new InvalidDataException("数据内容无法解析：" + ex.Message, ex);
+                throw new InvalidDataException(L.T("数据内容无法解析：") + ex.Message, ex);
             }
         }
 
         public static byte[] Encrypt(VaultData data, string password)
         {
             if (data == null) throw new ArgumentNullException("data");
-            if (string.IsNullOrEmpty(password)) throw new ArgumentException("密码不能为空", "password");
+            if (string.IsNullOrEmpty(password)) throw new ArgumentException(L.T("密码不能为空"), "password");
 
             byte[] plain = SerializeJson(data);
             byte[] salt = RandomBytes(SaltLen);
@@ -631,10 +631,10 @@ namespace KeyCenter
         public static VaultData Decrypt(byte[] file, string password)
         {
             if (file == null || file.Length < HeaderLen + MacLen)
-                throw new InvalidDataException("数据文件不完整或已损坏");
+                throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
             for (int i = 0; i < Magic.Length; i++)
             {
-                if (file[i] != Magic[i]) throw new InvalidDataException("不是 Key Center 数据文件");
+                if (file[i] != Magic[i]) throw new InvalidDataException(L.T("不是 Key Center 数据文件"));
             }
             byte[] salt = new byte[SaltLen];
             byte[] iv = new byte[IvLen];
@@ -642,7 +642,7 @@ namespace KeyCenter
             Buffer.BlockCopy(file, 4 + SaltLen, iv, 0, IvLen);
             int cipherLen = BitConverter.ToInt32(file, 4 + SaltLen + IvLen);
             if (cipherLen < 0 || HeaderLen + cipherLen + MacLen != file.Length)
-                throw new InvalidDataException("数据文件不完整或已损坏");
+                throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
 
             byte[] material = DeriveKey(password, salt, 64);
             byte[] encKey = new byte[32];

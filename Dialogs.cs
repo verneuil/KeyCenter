@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -10,6 +10,15 @@ namespace KeyCenter
     internal class DarkForm : Form
     {
         private readonly List<Panel> dividers = new List<Panel>();
+        private Panel headerBar;
+        private Label headerTitleLbl;
+        private IconButton headerCloseBtn;
+        private bool headerBuilt;
+        private Point dragOffset;
+        private bool draggingHeader;
+
+        /// <summary>为已有大标题的弹窗关闭顶部标题，仅保留关闭按钮。</summary>
+        protected bool SuppressHeaderTitle = false;
 
         public DarkForm()
         {
@@ -18,7 +27,7 @@ namespace KeyCenter
             BackColor = T.Bg;
             ForeColor = T.Text;
             Font = T.FontUi;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = FormBorderStyle.None;
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
@@ -28,10 +37,102 @@ namespace KeyCenter
             DoubleBuffered = true;
         }
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ClassStyle |= 0x00020000; // CS_DROPSHADOW：无边框弹窗保留投影
+                return cp;
+            }
+        }
+
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            T.ApplyTitleBar(Handle);
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            BuildHeader();
+        }
+
+        private void BuildHeader()
+        {
+            if (headerBuilt) return;
+            headerBuilt = true;
+            int h = T.Px(52);
+            // 先把已有内容整体下移，给统一标题栏/关闭按钮留出空间
+            for (int i = 0; i < Controls.Count; i++)
+            {
+                Control c = Controls[i];
+                if (c != null) c.Top += h;
+            }
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + h);
+
+            headerBar = new Panel();
+            headerBar.BackColor = T.Bg;
+            headerBar.SetBounds(0, 0, ClientSize.Width, h);
+            Controls.Add(headerBar);
+            headerBar.BringToFront();
+
+            if (!SuppressHeaderTitle)
+            {
+                headerTitleLbl = UiKit.Label(Text, T.FontTitle, T.Text, T.Bg);
+                headerTitleLbl.SetBounds(T.Px(28), T.Px(10), ClientSize.Width - T.Px(28) - T.Px(64), T.Px(32));
+                headerTitleLbl.Name = "dlgHeaderTitle";
+                headerBar.Controls.Add(headerTitleLbl);
+            }
+
+            headerCloseBtn = UiKit.Icon(Ico.Close, L.T("关闭"));
+            headerCloseBtn.Name = "btnDlgClose";
+            headerCloseBtn.SetBounds(ClientSize.Width - T.Px(10) - T.Px(28), (h - T.Px(28)) / 2, T.Px(28), T.Px(28));
+            headerCloseBtn.BackColor = T.Bg;
+            headerCloseBtn.SurfaceCustom = true;
+            headerCloseBtn.Click += delegate { Close(); };
+            headerBar.Controls.Add(headerCloseBtn);
+
+            Panel line = new Panel();
+            line.BackColor = T.Border;
+            line.SetBounds(0, h - 1, ClientSize.Width, 1);
+            headerBar.Controls.Add(line);
+
+            headerBar.MouseDown += HeaderMouseDown;
+            headerBar.MouseMove += HeaderMouseMove;
+            headerBar.MouseUp += HeaderMouseUp;
+            if (headerTitleLbl != null)
+            {
+                headerTitleLbl.MouseDown += HeaderMouseDown;
+                headerTitleLbl.MouseMove += HeaderMouseMove;
+                headerTitleLbl.MouseUp += HeaderMouseUp;
+            }
+            KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
+            };
+            T.SetRoundedRegion(this, T.Px(12));
+        }
+
+        private void HeaderMouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+            draggingHeader = true;
+            Control c = (Control)sender;
+            Point p = c.PointToScreen(e.Location);
+            dragOffset = new Point(p.X - Left, p.Y - Top);
+        }
+
+        private void HeaderMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!draggingHeader) return;
+            Point p = ((Control)sender).PointToScreen(e.Location);
+            Location = new Point(p.X - dragOffset.X, p.Y - dragOffset.Y);
+        }
+
+        private void HeaderMouseUp(object sender, MouseEventArgs e)
+        {
+            draggingHeader = false;
         }
 
         /// <summary>把对话框自身也切到当前主题（用于设置里实时切换外观）。</summary>
@@ -43,8 +144,13 @@ namespace KeyCenter
             {
                 if (dividers[i] != null) dividers[i].BackColor = T.Border;
             }
+            if (headerBar != null)
+            {
+                headerBar.BackColor = T.Bg;
+                if (headerTitleLbl != null) headerTitleLbl.ForeColor = T.Text;
+                if (headerCloseBtn != null) headerCloseBtn.BackColor = T.Bg;
+            }
             T.ApplyTree(this);
-            if (IsHandleCreated) T.ApplyTitleBar(Handle);
             Invalidate(true);
         }
 
@@ -75,7 +181,7 @@ namespace KeyCenter
 
         protected FlatButton MakeCancel(int x, int y)
         {
-            FlatButton b = UiKit.Ghost("取消");
+            FlatButton b = UiKit.Ghost(L.T("取消"));
             b.SetBounds(x, y, T.Px(88), T.Px(38));
             b.Name = "btnCancel";
             b.DialogResult = DialogResult.Cancel;
@@ -101,7 +207,7 @@ namespace KeyCenter
             input.SetBounds(T.Px(28), T.Px(48), T.Px(424), T.Px(42));
             input.Name = "txtPrompt";
             input.Box.Name = "txtPrompt";
-            input.SetAccessibleName("输入");
+            input.SetAccessibleName(L.T("输入"));
             input.SetText(initial ?? "");
             Controls.Add(input);
 
@@ -111,7 +217,7 @@ namespace KeyCenter
             Controls.Add(error);
 
             FlatButton cancel = MakeCancel(T.Px(268), T.Px(172));
-            FlatButton ok = UiKit.Primary("确定");
+            FlatButton ok = UiKit.Primary(L.T("确定"));
             ok.SetBounds(T.Px(364), T.Px(172), T.Px(88), T.Px(38));
             ok.Name = "btnOk";
             ok.Click += delegate
@@ -119,7 +225,7 @@ namespace KeyCenter
                 string v = input.Value.Trim();
                 if (v.Length == 0)
                 {
-                    error.Text = "请输入内容";
+                    error.Text = L.T("请输入内容");
                     return;
                 }
                 Result = v;
@@ -158,6 +264,7 @@ namespace KeyCenter
         public PasswordPromptDialog(string title, string desc)
         {
             Text = title;
+            SuppressHeaderTitle = true;
             ClientSize = new Size(T.Px(480), T.Px(292));
 
             Label cap = UiKit.Label(title, T.FontSection, T.Text, T.Bg);
@@ -171,10 +278,10 @@ namespace KeyCenter
             input = new DarkInput(false);
             input.Surface = SurfaceRole.Bg;
             input.PasswordMode = true;
-            input.Placeholder = "主密码";
+            input.Placeholder = L.T("主密码");
             input.Name = "txtExportPassword";
             input.Box.Name = "txtExportPassword";
-            input.SetAccessibleName("主密码");
+            input.SetAccessibleName(L.T("主密码"));
             input.SetBounds(T.Px(28), T.Px(122), T.Px(424), T.Px(44));
             Controls.Add(input);
 
@@ -183,9 +290,9 @@ namespace KeyCenter
             error.Name = "lblError";
             Controls.Add(error);
 
-            FlatButton cancel = MakeCancel(T.Px(264), T.Px(216));
-            FlatButton ok = UiKit.Primary("继续导出");
-            ok.SetBounds(T.Px(362), T.Px(216), T.Px(90), T.Px(40));
+            FlatButton cancel = MakeCancel(T.Px(230), T.Px(216));
+            FlatButton ok = UiKit.Primary(L.T("继续导出"));
+            ok.SetBounds(T.Px(328), T.Px(216), T.Px(124), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate { Submit(); };
             Controls.Add(ok);
@@ -199,12 +306,12 @@ namespace KeyCenter
             string v = input.Value;
             if (v.Length == 0)
             {
-                error.Text = "请输入主密码";
+                error.Text = L.T("请输入主密码");
                 return;
             }
             if (ValidatePassword != null && !ValidatePassword(v))
             {
-                error.Text = "主密码错误，请重试";
+                error.Text = L.T("主密码错误，请重试");
                 input.SetText("");
                 input.FocusInner();
                 return;
@@ -274,7 +381,7 @@ namespace KeyCenter
             msg.SetBounds(T.Px(28), T.Px(26), T.Px(414), T.Px(100));
             Controls.Add(msg);
 
-            FlatButton ok = UiKit.Primary("知道了");
+            FlatButton ok = UiKit.Primary(L.T("知道了"));
             ok.SetBounds(T.Px(354), T.Px(148), T.Px(88), T.Px(38));
             ok.Name = "btnOk";
             ok.Click += delegate
@@ -304,42 +411,42 @@ namespace KeyCenter
 
         public ChangePasswordDialog()
         {
-            Text = "修改主密码";
+            Text = L.T("修改主密码");
             ClientSize = new Size(T.Px(500), T.Px(344));
 
-            Label desc = UiKit.Label("新密码至少 6 位。修改后用新密码才能解锁，请务必牢记。", T.FontSmall, T.Muted, T.Bg);
+            Label desc = UiKit.Label(L.T("新密码至少 6 位。修改后用新密码才能解锁，请务必牢记。"), T.FontSmall, T.Muted, T.Bg);
             desc.SetBounds(T.Px(30), T.Px(20), T.Px(440), T.Px(36));
             Controls.Add(desc);
 
-            Caption("新密码", T.Px(30), T.Px(64), T.Px(440));
+            Caption(L.T("新密码"), T.Px(30), T.Px(64), T.Px(440));
             pw1 = new DarkInput(false);
             pw1.BackColor = T.Bg;
             pw1.PasswordMode = true;
-            pw1.Placeholder = "新密码";
+            pw1.Placeholder = L.T("新密码");
             pw1.SetBounds(T.Px(30), T.Px(86), T.Px(440), T.Px(42));
             pw1.Name = "txtNewPw1";
             pw1.Box.Name = "txtNewPw1";
-            pw1.SetAccessibleName("新密码");
+            pw1.SetAccessibleName(L.T("新密码"));
             Controls.Add(pw1);
 
-            Caption("确认新密码", T.Px(30), T.Px(142), T.Px(440));
+            Caption(L.T("确认新密码"), T.Px(30), T.Px(142), T.Px(440));
             pw2 = new DarkInput(false);
             pw2.BackColor = T.Bg;
             pw2.PasswordMode = true;
-            pw2.Placeholder = "再次输入新密码";
+            pw2.Placeholder = L.T("再次输入新密码");
             pw2.SetBounds(T.Px(30), T.Px(164), T.Px(440), T.Px(42));
             pw2.Name = "txtNewPw2";
             pw2.Box.Name = "txtNewPw2";
-            pw2.SetAccessibleName("确认新密码");
+            pw2.SetAccessibleName(L.T("确认新密码"));
             Controls.Add(pw2);
 
             error = UiKit.Label("", T.FontSmall, T.Danger, T.Bg);
             error.SetBounds(T.Px(30), T.Px(214), T.Px(440), T.Px(20));
             Controls.Add(error);
 
-            MakeCancel(T.Px(300), T.Px(274));
-            FlatButton ok = UiKit.Primary("确定修改");
-            ok.SetBounds(T.Px(396), T.Px(274), T.Px(104), T.Px(38));
+            MakeCancel(T.Px(236), T.Px(274));
+            FlatButton ok = UiKit.Primary(L.T("确定修改"));
+            ok.SetBounds(T.Px(334), T.Px(274), T.Px(136), T.Px(38));
             ok.Name = "btnOk";
             ok.Click += delegate
             {
@@ -347,12 +454,12 @@ namespace KeyCenter
                 string b = pw2.Value;
                 if (a.Length < 6)
                 {
-                    error.Text = "新密码至少 6 位";
+                    error.Text = L.T("新密码至少 6 位");
                     return;
                 }
                 if (a != b)
                 {
-                    error.Text = "两次输入的密码不一致";
+                    error.Text = L.T("两次输入的密码不一致");
                     return;
                 }
                 NewPassword = a;
@@ -422,7 +529,7 @@ namespace KeyCenter
             else selectedCategory = defaultCategory ?? "";
             if (selectedCategory.Length > 0 && !cats.Contains(selectedCategory)) cats.Add(selectedCategory);
 
-            Text = editing == null ? "添加 Key" : "编辑 Key";
+            Text = editing == null ? L.T("添加 Key") : L.T("编辑 Key");
             ClientSize = new Size(T.Px(660), T.Px(700));
 
             scrollView = new ThinScrollView();
@@ -441,13 +548,13 @@ namespace KeyCenter
 
             BuildContent();
 
-            FlatButton cancel = UiKit.Ghost("取消");
+            FlatButton cancel = UiKit.Ghost(L.T("取消"));
             cancel.SetBounds(T.Px(360), T.Px(26), T.Px(88), T.Px(40));
             cancel.Name = "btnCancel";
             cancel.DialogResult = DialogResult.Cancel;
             actionBar.Controls.Add(cancel);
 
-            saveBtn = UiKit.Primary("保存");
+            saveBtn = UiKit.Primary(L.T("保存"));
             saveBtn.SetBounds(T.Px(462), T.Px(26), T.Px(84), T.Px(40));
             saveBtn.Name = "btnSave";
             saveBtn.Click += delegate { OnSave(); };
@@ -478,18 +585,18 @@ namespace KeyCenter
 
         private void BuildContent()
         {
-            lblNameCap = UiKit.Label("名称", T.FontSmall, T.Muted, T.Bg);
+            lblNameCap = UiKit.Label(L.T("名称"), T.FontSmall, T.Muted, T.Bg);
             contentHost.Controls.Add(lblNameCap);
 
             txtName = new DarkInput(false);
             txtName.Surface = SurfaceRole.Bg;
-            txtName.Placeholder = "例如：OpenAI API";
+            txtName.Placeholder = L.T("例如：OpenAI API");
             txtName.Name = "txtName";
             txtName.Box.Name = "txtName";
-            txtName.SetAccessibleName("名称");
+            txtName.SetAccessibleName(L.T("名称"));
             contentHost.Controls.Add(txtName);
 
-            lblCatCap = UiKit.Label("分类", T.FontSmall, T.Muted, T.Bg);
+            lblCatCap = UiKit.Label(L.T("分类"), T.FontSmall, T.Muted, T.Bg);
             contentHost.Controls.Add(lblCatCap);
 
             chipHost = new FlowLayoutPanel();
@@ -499,30 +606,30 @@ namespace KeyCenter
             contentHost.Controls.Add(chipHost);
             BuildChips();
 
-            lblKeyTitle = UiKit.Label("Key 列表", T.FontSection, T.Text, T.Bg);
+            lblKeyTitle = UiKit.Label(L.T("Key 列表"), T.FontSection, T.Text, T.Bg);
             contentHost.Controls.Add(lblKeyTitle);
 
-            lblKeyHint = UiKit.Label("可添加多条；点 ☆ 设为默认，列表只显示默认 Key", T.FontSmall, T.Muted, T.Bg);
+            lblKeyHint = UiKit.Label(L.T("可添加多条；点 ☆ 设为默认，列表只显示默认 Key"), T.FontSmall, T.Muted, T.Bg);
             contentHost.Controls.Add(lblKeyHint);
 
             keysHost = new BufferedPanel();
             keysHost.BackColor = T.Bg;
             contentHost.Controls.Add(keysHost);
 
-            btnAddKey = UiKit.Ghost("＋ 添加一条 Key");
+            btnAddKey = UiKit.Ghost(L.T("＋ 添加一条 Key"));
             btnAddKey.Name = "btnAddKey";
             btnAddKey.Click += delegate { AddKeyRow(Vault.NewId(), "", "", false); };
             contentHost.Controls.Add(btnAddKey);
 
-            lblNoteCap = UiKit.Label("备注（可选）", T.FontSmall, T.Muted, T.Bg);
+            lblNoteCap = UiKit.Label(L.T("备注（可选）"), T.FontSmall, T.Muted, T.Bg);
             contentHost.Controls.Add(lblNoteCap);
 
             txtNote = new DarkInput(false);
             txtNote.Surface = SurfaceRole.Bg;
-            txtNote.Placeholder = "这个条目的用途、项目等";
+            txtNote.Placeholder = L.T("这个条目的用途、项目等");
             txtNote.Name = "txtNote";
             txtNote.Box.Name = "txtNote";
-            txtNote.SetAccessibleName("备注");
+            txtNote.SetAccessibleName(L.T("备注"));
             contentHost.Controls.Add(txtNote);
 
             error = UiKit.Label("", T.FontSmall, T.Danger, T.Bg);
@@ -603,7 +710,7 @@ namespace KeyCenter
         {
             if (keyRows.Count <= 1)
             {
-                error.Text = "至少保留一条 Key";
+                error.Text = L.T("至少保留一条 Key");
                 return;
             }
             bool wasDefault = row.IsDefault;
@@ -623,13 +730,13 @@ namespace KeyCenter
                 chips[i].Dispose();
             }
             chips.Clear();
-            AddChip("未分类", "", false);
+            AddChip(L.T("未分类"), "", false);
             for (int i = 0; i < cats.Count; i++)
             {
                 string cat = cats[i];
                 AddChip(cat, cat, cat == selectedCategory);
             }
-            ChipButton add = new ChipButton("＋ 新建分类", null, false);
+            ChipButton add = new ChipButton(L.T("＋ 新建分类"), null, false);
             add.IsAction = true;
             add.Name = "chipNew";
             add.BackColor = T.Bg;
@@ -670,7 +777,7 @@ namespace KeyCenter
 
         private void CreateCategory()
         {
-            string name = PromptDialog.Ask(this, "新建分类", "分类名称", "");
+            string name = PromptDialog.Ask(this, L.T("新建分类"), L.T("分类名称"), "");
             if (name == null) return;
             name = name.Trim();
             if (name.Length == 0) return;
@@ -684,7 +791,7 @@ namespace KeyCenter
             string name = txtName.Value.Trim();
             if (name.Length == 0)
             {
-                error.Text = "请输入名称";
+                error.Text = L.T("请输入名称");
                 txtName.FocusInner();
                 return;
             }
@@ -696,7 +803,7 @@ namespace KeyCenter
                     bool self = editing != null && string.Equals(editing.Name, name, StringComparison.OrdinalIgnoreCase);
                     if (!self)
                     {
-                        error.Text = "已存在同名 Key，请换一个名称";
+                        error.Text = L.T("已存在同名 Key，请换一个名称");
                         txtName.FocusInner();
                         return;
                     }
@@ -719,7 +826,7 @@ namespace KeyCenter
             }
             if (keys.Count == 0)
             {
-                error.Text = "至少填写一条 Key 内容";
+                error.Text = L.T("至少填写一条 Key 内容");
                 if (keyRows.Count > 0) keyRows[0].ValueInput.FocusInner();
                 return;
             }
@@ -774,6 +881,7 @@ namespace KeyCenter
         private string selectedCategoryName;
         private readonly List<ChipButton> lockChips = new List<ChipButton>();
         private readonly List<ChipButton> themeChips = new List<ChipButton>();
+        private readonly List<ChipButton> langChips = new List<ChipButton>();
         private readonly Label pwState;
         private readonly Label pathLbl;
         private readonly Action<ThemeMode> onThemeMode;
@@ -782,10 +890,11 @@ namespace KeyCenter
 
         public bool Changed;
         public bool PasswordChanged;
+        public bool LanguageChanged;
         public string NewPassword;
 
         private static readonly int[] LockValues = new int[] { 0, 1, 5, 15, 30 };
-        private static readonly string[] LockTexts = new string[] { "关闭", "1 分钟", "5 分钟", "15 分钟", "30 分钟" };
+        private static readonly string[] LockTexts = new string[] { L.T("关闭"), L.T("1 分钟"), L.T("5 分钟"), L.T("15 分钟"), L.T("30 分钟") };
 
         public SettingsDialog(VaultData vault, string dataPath, ThemeMode themeMode, Action<ThemeMode> onThemeMode, Action onResetWindow)
         {
@@ -794,22 +903,42 @@ namespace KeyCenter
             this.themeMode = themeMode;
             this.onThemeMode = onThemeMode;
             this.onResetWindow = onResetWindow;
-            Text = "设置";
+            Text = L.T("设置");
+            SuppressHeaderTitle = true;
             ClientSize = new Size(T.Px(660), T.Px(740));
 
             int left = T.Px(30);
             int width = ClientSize.Width - left * 2;
 
-            Label title = UiKit.Label("设置", T.FontH1, T.Text, T.Bg);
-            title.SetBounds(left, T.Px(18), width, T.Px(36));
+            int langX = ClientSize.Width - T.Px(30) - T.Px(170);
+            Label title = UiKit.Label(L.T("设置"), T.FontH1, T.Text, T.Bg);
+            title.SetBounds(left, T.Px(18), Math.Max(T.Px(200), langX - left - T.Px(14)), T.Px(36));
+            title.Name = "lblSettingsTitle";
             Controls.Add(title);
-            Label sub = UiKit.Label("分类、安全与数据存储", T.FontSmall, T.Muted, T.Bg);
-            sub.SetBounds(left + T.Px(1), T.Px(52), width, T.Px(20));
+            Label sub = UiKit.Label(L.T("分类、安全与数据存储"), T.FontSmall, T.Muted, T.Bg);
+            sub.SetBounds(left + T.Px(1), T.Px(52), Math.Max(T.Px(200), langX - left - T.Px(14)), T.Px(20));
             Controls.Add(sub);
 
-            SectionTitle("分类管理", left, T.Px(88), width);
+            ChipButton zhChip = new ChipButton(L.T("中文"), "zh", AppConfig.Language != "en");
+            zhChip.SetBounds(langX, T.Px(20), T.Px(78), T.Px(32));
+            zhChip.Name = "chipLangZh";
+            zhChip.Click += delegate { SetLanguage("zh"); };
+            Controls.Add(zhChip);
+            langChips.Add(zhChip);
+            ChipButton enChip = new ChipButton("English", "en", AppConfig.Language == "en");
+            enChip.SetBounds(langX + T.Px(84), T.Px(20), T.Px(86), T.Px(32));
+            enChip.Name = "chipLangEn";
+            enChip.Click += delegate { SetLanguage("en"); };
+            Controls.Add(enChip);
+            langChips.Add(enChip);
+            Label langHint = UiKit.Label(L.T("重启后生效"), T.FontSmall, T.Muted, T.Bg);
+            langHint.SetBounds(langX, T.Px(56), T.Px(170), T.Px(18));
+            langHint.Name = "lblLangHint";
+            Controls.Add(langHint);
 
-            Label catHint = UiKit.Label("点击 ↑ ↓ 调整顺序", T.FontSmall, T.Muted, T.Bg);
+            SectionTitle(L.T("分类管理"), left, T.Px(88), width);
+
+            Label catHint = UiKit.Label(L.T("点击 ↑ ↓ 调整顺序"), T.FontSmall, T.Muted, T.Bg);
             catHint.SetBounds(left + width - T.Px(170), T.Px(91), T.Px(170), T.Px(20));
             catHint.TextAlign = ContentAlignment.MiddleRight;
             Controls.Add(catHint);
@@ -824,19 +953,19 @@ namespace KeyCenter
             catHost.BackColor = T.Bg;
             catHost.Name = "catHost";
 
-            FlatButton bNew = UiKit.Ghost("＋ 新建分类");
+            FlatButton bNew = UiKit.Ghost(L.T("＋ 新建分类"));
             bNew.SetBounds(T.Px(438), T.Px(118), T.Px(192), T.Px(36));
             bNew.Name = "btnNewCategory";
             bNew.Click += delegate { NewCategory(); };
             Controls.Add(bNew);
 
-            FlatButton bRename = UiKit.Ghost("重命名");
+            FlatButton bRename = UiKit.Ghost(L.T("重命名"));
             bRename.SetBounds(T.Px(438), T.Px(162), T.Px(192), T.Px(36));
             bRename.Name = "btnRenameCategory";
             bRename.Click += delegate { RenameCategory(); };
             Controls.Add(bRename);
 
-            FlatButton bDelete = UiKit.Ghost("删除分类");
+            FlatButton bDelete = UiKit.Ghost(L.T("删除分类"));
             bDelete.SetBounds(T.Px(438), T.Px(206), T.Px(192), T.Px(36));
             bDelete.TextColor = T.Danger;
             bDelete.Name = "btnDeleteCategory";
@@ -845,8 +974,8 @@ namespace KeyCenter
 
             Divider(left, T.Px(278), width);
 
-            SectionTitle("安全", left, T.Px(298), width);
-            Caption("自动锁定（无操作超时）", left, T.Px(326), width);
+            SectionTitle(L.T("安全"), left, T.Px(298), width);
+            Caption(L.T("自动锁定（无操作超时）"), left, T.Px(326), width);
 
             int cx = left;
             for (int i = 0; i < LockValues.Length; i++)
@@ -867,7 +996,7 @@ namespace KeyCenter
                 cx += chip.Width + T.Px(8);
             }
 
-            FlatButton bPw = UiKit.Ghost("修改主密码…");
+            FlatButton bPw = UiKit.Ghost(L.T("修改主密码…"));
             bPw.SetBounds(left, T.Px(394), T.Px(180), T.Px(36));
             bPw.Name = "btnChangePassword";
             bPw.Click += delegate { ChangePassword(); };
@@ -879,9 +1008,9 @@ namespace KeyCenter
 
             Divider(left, T.Px(444), width);
 
-            SectionTitle("外观", left, T.Px(462), width);
+            SectionTitle(L.T("外观"), left, T.Px(462), width);
             ThemeMode[] themeModes = new ThemeMode[] { ThemeMode.System, ThemeMode.Light, ThemeMode.Dark };
-            string[] themeTexts = new string[] { "跟随系统", "浅色", "深色" };
+            string[] themeTexts = new string[] { L.T("跟随系统"), L.T("浅色"), L.T("深色") };
             int tx = left;
             for (int i = 0; i < themeModes.Length; i++)
             {
@@ -907,7 +1036,7 @@ namespace KeyCenter
                 tx += chip.Width + T.Px(8);
             }
 
-            FlatButton bResetWindow = UiKit.Ghost("恢复默认窗口大小");
+            FlatButton bResetWindow = UiKit.Ghost(L.T("恢复默认窗口大小"));
             bResetWindow.SetBounds(ClientSize.Width - left - T.Px(190), T.Px(490), T.Px(190), T.Px(32));
             bResetWindow.Name = "btnResetWindow";
             bResetWindow.TextColor = T.TextDim;
@@ -920,20 +1049,26 @@ namespace KeyCenter
 
             Divider(left, T.Px(540), width);
 
-            SectionTitle("数据存储", left, T.Px(558), width);
+            SectionTitle(L.T("数据存储"), left, T.Px(558), width);
             pathLbl = UiKit.Label(dataPath, T.FontMonoSm, T.Muted, T.Bg);
             pathLbl.SetBounds(left, T.Px(586), width, T.Px(38));
             pathLbl.Name = "lblDataPath";
             Controls.Add(pathLbl);
 
-            FlatButton bOpen = UiKit.Ghost("打开数据文件夹");
+            FlatButton bOpen = UiKit.Ghost(L.T("打开数据文件夹"));
             bOpen.SetBounds(left, T.Px(628), T.Px(180), T.Px(36));
             bOpen.Name = "btnOpenFolder";
             bOpen.Click += delegate { OpenFolder(); };
             Controls.Add(bOpen);
 
-            FlatButton done = UiKit.Primary("完成");
-            done.SetBounds(ClientSize.Width - T.Px(30) - T.Px(96), ClientSize.Height - T.Px(28) - T.Px(40), T.Px(96), T.Px(40));
+            Label about = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.Bg);
+            about.SetBounds(left, ClientSize.Height - T.Px(58), T.Px(280), T.Px(20));
+            about.Cursor = Cursors.Hand;
+            about.Name = "lblSettingsAbout";
+            about.Click += delegate { AppInfo.OpenRepo(); };
+            Controls.Add(about);
+
+            FlatButton done = UiKit.Primary(L.T("完成"));            done.SetBounds(ClientSize.Width - T.Px(30) - T.Px(96), ClientSize.Height - T.Px(28) - T.Px(40), T.Px(96), T.Px(40));
             done.Name = "btnDone";
             done.Click += delegate
             {
@@ -966,6 +1101,19 @@ namespace KeyCenter
                 ChipButton chip = themeChips[i];
                 chip.IsSelected = (chip.ChipValue == ((int)themeMode).ToString());
                 chip.Invalidate();
+            }
+        }
+
+        private void SetLanguage(string lang)
+        {
+            if (AppConfig.Language == lang) return;
+            AppConfig.Language = lang;
+            AppConfig.Save();
+            LanguageChanged = true;
+            for (int i = 0; i < langChips.Count; i++)
+            {
+                langChips[i].IsSelected = (langChips[i].ChipValue == lang);
+                langChips[i].Invalidate();
             }
         }
 
@@ -1144,13 +1292,13 @@ namespace KeyCenter
 
         private void NewCategory()
         {
-            string name = PromptDialog.Ask(this, "新建分类", "分类名称", "");
+            string name = PromptDialog.Ask(this, L.T("新建分类"), L.T("分类名称"), "");
             if (name == null) return;
             name = name.Trim();
             if (name.Length == 0) return;
             if (vault.Categories.Contains(name))
             {
-                InfoDialog.Show(this, "提示", "这个分类已经存在了。");
+                InfoDialog.Show(this, L.T("提示"), L.T("这个分类已经存在了。"));
                 return;
             }
             vault.Categories.Add(name);
@@ -1163,16 +1311,16 @@ namespace KeyCenter
             string oldName = SelectedCategory();
             if (oldName == null)
             {
-                InfoDialog.Show(this, "提示", "请先在左侧选择一个分类。");
+                InfoDialog.Show(this, L.T("提示"), L.T("请先在左侧选择一个分类。"));
                 return;
             }
-            string name = PromptDialog.Ask(this, "重命名分类", "新的分类名称", oldName);
+            string name = PromptDialog.Ask(this, L.T("重命名分类"), L.T("新的分类名称"), oldName);
             if (name == null) return;
             name = name.Trim();
             if (name.Length == 0 || name == oldName) return;
             if (vault.Categories.Contains(name))
             {
-                InfoDialog.Show(this, "提示", "这个分类名称已经存在了。");
+                InfoDialog.Show(this, L.T("提示"), L.T("这个分类名称已经存在了。"));
                 return;
             }
             int idx = vault.Categories.IndexOf(oldName);
@@ -1190,13 +1338,17 @@ namespace KeyCenter
             string name = SelectedCategory();
             if (name == null)
             {
-                InfoDialog.Show(this, "提示", "请先在左侧选择一个分类。");
+                InfoDialog.Show(this, L.T("提示"), L.T("请先在左侧选择一个分类。"));
                 return;
             }
             int count = CountItems(name);
-            string msg = "确定删除分类「" + name + "」吗？";
-            if (count > 0) msg += "该分类下的 " + count + " 个 Key 会变为「未分类」，Key 本身不会被删除。";
-            if (!ConfirmDialog.Ask(this, "删除分类", msg, "删除", true)) return;
+            string msg = L.T("确定删除分类「") + name + L.T("」吗？");
+            if (count > 0)
+            {
+                if (L.IsEn) msg += "\r\n";
+                msg += L.T("该分类下的 ") + L.KeyCount(count) + L.T(" 会变为「未分类」，Key 本身不会被删除。");
+            }
+            if (!ConfirmDialog.Ask(this, L.T("删除分类"), msg, L.T("删除"), true)) return;
             vault.Categories.Remove(name);
             for (int i = 0; i < vault.Items.Count; i++)
             {
@@ -1212,7 +1364,7 @@ namespace KeyCenter
             if (pw == null) return;
             NewPassword = pw;
             PasswordChanged = true;
-            pwState.Text = "新密码已设置，点「完成」后生效";
+            pwState.Text = L.T("新密码已设置，点「完成」后生效");
         }
 
         private void RefreshLockChips()
@@ -1238,7 +1390,7 @@ namespace KeyCenter
             }
             catch (Exception ex)
             {
-                InfoDialog.Show(this, "找不到文件夹", ex.Message);
+                InfoDialog.Show(this, L.T("找不到文件夹"), ex.Message);
             }
         }
     }

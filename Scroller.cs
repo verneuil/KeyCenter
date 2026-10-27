@@ -202,7 +202,8 @@ namespace KeyCenter
             this.copyAction = copyAction;
             this.defaultAction = defaultAction;
 
-            Text = "Key 详情";
+            Text = L.T("Key 详情");
+            SuppressHeaderTitle = true;
             ClientSize = new Size(T.Px(600), T.Px(620));
 
             Label title = UiKit.Label(item.Name, T.FontTitle, T.Text, T.Bg);
@@ -219,7 +220,7 @@ namespace KeyCenter
             copiedLbl.TextAlign = ContentAlignment.MiddleRight;
             Controls.Add(copiedLbl);
 
-            FlatButton edit = UiKit.Ghost("编辑条目");
+            FlatButton edit = UiKit.Ghost(L.T("编辑条目"));
             edit.SetBounds(ClientSize.Width - T.Px(28) - T.Px(96), T.Px(18), T.Px(96), T.Px(34));
             edit.Name = "btnEditEntry";
             edit.Click += delegate
@@ -235,7 +236,7 @@ namespace KeyCenter
             scroll.SetBounds(T.Px(24), T.Px(92), ClientSize.Width - T.Px(48), ClientSize.Height - T.Px(92) - T.Px(84));
             Controls.Add(scroll);
 
-            FlatButton close = UiKit.Primary("关闭");
+            FlatButton close = UiKit.Primary(L.T("关闭"));
             close.SetBounds(ClientSize.Width - T.Px(28) - T.Px(88), ClientSize.Height - T.Px(28) - T.Px(40), T.Px(88), T.Px(40));
             close.Name = "btnKeysClose";
             close.Click += delegate
@@ -263,7 +264,7 @@ namespace KeyCenter
             rows.Clear();
             if (item.Keys == null) item.Keys = new List<SubKey>();
             int n = item.Keys.Count;
-            subLbl.Text = "共 " + n + " 个 Key · 点击 ☆ 设为默认" + (n > 1 ? "；列表卡片显示带 ☆ 的默认 Key" : "");
+            subLbl.Text = L.T("共 ") + L.KeyCount(n) + L.T(" · 点击 ☆ 设为默认") + (n > 1 ? L.T("；列表卡片显示带 ☆ 的默认 Key") : "");
             for (int i = 0; i < n; i++)
             {
                 SubKey k = item.Keys[i];
@@ -273,13 +274,13 @@ namespace KeyCenter
                 row.CopyRequested = delegate(SubKey sub, string display, bool revealed)
                 {
                     if (copyAction != null) copyAction(item, sub);
-                    copiedLbl.Text = "已复制 " + (DisplayName(sub) ?? "");
+                    copiedLbl.Text = L.T("已复制 ") + (DisplayName(sub) ?? "");
                 };
                 row.DefaultRequested = delegate(string keyId)
                 {
                     if (defaultAction != null) defaultAction(item, keyId);
                     BuildRows();
-                    copiedLbl.Text = "已切换默认 Key";
+                    copiedLbl.Text = L.T("已切换默认 Key");
                 };
                 scroll.Inner.Controls.Add(row);
                 rows.Add(row);

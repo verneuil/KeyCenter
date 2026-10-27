@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("便携式 API Key 保险箱")]
 [assembly: AssemblyProduct("Key Center")]
 [assembly: AssemblyCopyright("Key Center")]
-[assembly: AssemblyVersion("1.8.4.0")]
-[assembly: AssemblyFileVersion("1.8.4.0")]
+[assembly: AssemblyVersion("1.8.5.0")]
+[assembly: AssemblyFileVersion("1.8.5.0")]
 
 namespace KeyCenter
 {
@@ -76,7 +76,7 @@ namespace KeyCenter
 
                     try
                     {
-                        InfoDialog.Show(null, "出错了", e.Exception.Message);
+                        InfoDialog.Show(null, L.T("出错了"), e.Exception.Message);
                     }
                     catch (Exception) { }
                 };
@@ -126,7 +126,7 @@ namespace KeyCenter
                 }
             }
             catch (Exception) { }
-            MessageBox.Show("Key Center 已经在运行中。", "Key Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(L.T("Key Center 已经在运行中。"), "Key Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 
@@ -139,19 +139,19 @@ namespace KeyCenter
             try
             {
                 VaultData d = new VaultData();
-                d.Categories.Add("工作");
-                d.Categories.Add("个人");
+                d.Categories.Add(L.T("工作"));
+                d.Categories.Add(L.T("个人"));
                 KeyItem it = new KeyItem();
                 it.Id = Vault.NewId();
-                it.Name = "测试 Key \"quoted\"";
-                it.Category = "工作";
+                it.Name = L.T("测试 Key \"quoted\"");
+                it.Category = L.T("工作");
                 SubKey sk = new SubKey(); sk.Id = Vault.NewId(); sk.Value = "demo-value-not-a-real-key"; it.Keys.Add(sk); it.DefaultKeyId = sk.Id;
-                it.Note = "备注\n第二行 中文";
+                it.Note = L.T("备注\n第二行 中文");
                 it.Created = Vault.NowMs();
                 it.Updated = it.Created;
                 d.Items.Add(it);
 
-                string pw = "Test#2026 密码";
+                string pw = L.T("Test#2026 密码");
                 byte[] enc = Vault.Encrypt(d, pw);
                 VaultData back = Vault.Decrypt(enc, pw);
                 Assert(back.Categories.Count == 2, "categories count");

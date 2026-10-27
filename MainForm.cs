@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -35,6 +36,8 @@ namespace KeyCenter
         private Panel sidebar;
         private Label lblCatHead;
         private Label lblSidebarFoot;
+        private Label lblAbout;
+        private Label authAbout;
         private FlowLayoutPanel catHost;
         private FlatButton btnNewCat;
         private Panel content;
@@ -176,7 +179,7 @@ namespace KeyCenter
         {
             if (!unlocked) return;
             SetThemeMode(T.IsDark ? ThemeMode.Light : ThemeMode.Dark);
-            ShowToast(T.IsDark ? "已切换为深色模式" : "已切换为浅色模式");
+            ShowToast(T.IsDark ? L.T("已切换为深色模式") : L.T("已切换为浅色模式"));
         }
 
         private void SetThemeMode(ThemeMode mode)
@@ -196,8 +199,8 @@ namespace KeyCenter
         private void UpdateThemeButton()
         {
             if (btnTheme == null) return;
-            string tip = T.IsDark ? "切换为浅色模式" : "切换为深色模式";
-            if (AppConfig.ThemeMode == ThemeMode.System) tip += "（当前跟随系统：" + (T.IsDark ? "深色" : "浅色") + "）";
+            string tip = T.IsDark ? L.T("切换为浅色模式") : L.T("切换为深色模式");
+            if (AppConfig.ThemeMode == ThemeMode.System) tip += L.T("（当前跟随系统：") + (T.IsDark ? L.T("深色") : L.T("浅色")) + "）";
             btnTheme.Glyph = T.IsDark ? Ico.Sun : Ico.Moon;
             btnTheme.Text = tip;
             btnTheme.AccessibleName = tip;
@@ -273,27 +276,27 @@ namespace KeyCenter
                 {
                     e.Cancel = true;
                     closeWhenExportDone = true;
-                    ShowToast("正在导出，完成后将自动退出");
+                    ShowToast(L.T("正在导出，完成后将自动退出"));
                     return;
                 }
                 if (pwdChanging)
                 {
                     e.Cancel = true;
-                    ShowToast("正在更新主密码，请稍候");
+                    ShowToast(L.T("正在更新主密码，请稍候"));
                     return;
                 }
                 if (saveInProgress || savePending)
                 {
                     e.Cancel = true;
                     closeWhenSaved = true;
-                    ShowToast("正在保存，保存完成后将自动退出");
+                    ShowToast(L.T("正在保存，保存完成后将自动退出"));
                     return;
                 }
                 if (dirty)
                 {
                     e.Cancel = true;
-                    if (ConfirmDialog.Ask(this, "有未保存的修改",
-                        "还有修改没有成功保存到磁盘，退出后会丢失。\r\n仍要退出吗？", "退出", true))
+                    if (ConfirmDialog.Ask(this, L.T("有未保存的修改"),
+                        L.T("还有修改没有成功保存到磁盘，退出后会丢失。\r\n仍要退出吗？"), L.T("退出"), true))
                     {
                         closeForced = true;
                         Close();
@@ -351,13 +354,13 @@ namespace KeyCenter
             lblApp = UiKit.Label("Key Center", T.FontTitle, T.Text, T.Bg);
             header.Controls.Add(lblApp);
 
-            lblSub = UiKit.Label("本地加密 · API Key 保险箱", T.FontSmall, T.Muted, T.Bg);
+            lblSub = UiKit.Label(L.T("本地加密 · API Key 保险箱"), T.FontSmall, T.Muted, T.Bg);
             lblSub.Cursor = Cursors.Default;
             lblSub.Click += delegate
             {
                 if (dirty && !saveInProgress && !savePending)
                 {
-                    if (!string.IsNullOrEmpty(lastSaveError)) ShowToast("上次保存失败：" + lastSaveError);
+                    if (!string.IsNullOrEmpty(lastSaveError)) ShowToast(L.T("上次保存失败：") + lastSaveError);
                     RetrySave();
                 }
             };
@@ -365,10 +368,10 @@ namespace KeyCenter
 
             txtSearch = new DarkInput(false);
             txtSearch.BackColor = T.Bg;
-            txtSearch.Placeholder = "搜索名称、分类或备注…";
+            txtSearch.Placeholder = L.T("搜索名称、分类或备注…");
             txtSearch.Name = "txtSearch";
             txtSearch.Box.Name = "txtSearch";
-            txtSearch.SetAccessibleName("搜索");
+            txtSearch.SetAccessibleName(L.T("搜索"));
             txtSearch.Box.TextChanged += delegate
             {
                 if (suppressSearchRefresh) return;
@@ -379,28 +382,28 @@ namespace KeyCenter
             };
             header.Controls.Add(txtSearch);
 
-            btnAdd = UiKit.Primary("＋ 添加");
+            btnAdd = UiKit.Primary(L.T("＋ 添加"));
             btnAdd.Name = "btnAdd";
-            btnAdd.AccessibleName = "添加 Key";
+            btnAdd.AccessibleName = L.T("添加 Key");
             btnAdd.Click += delegate { AddEntry(); };
             header.Controls.Add(btnAdd);
 
-            btnLock = UiKit.Icon(Ico.Lock, "锁定（Ctrl+L）");
+            btnLock = UiKit.Icon(Ico.Lock, L.T("锁定（Ctrl+L）"));
             btnLock.Name = "btnLock";
-            btnLock.Click += delegate { Lock("已锁定，请输入主密码"); };
+            btnLock.Click += delegate { Lock(L.T("已锁定，请输入主密码")); };
             header.Controls.Add(btnLock);
 
-            btnSettings = UiKit.Icon(Ico.Settings, "设置");
+            btnSettings = UiKit.Icon(Ico.Settings, L.T("设置"));
             btnSettings.Name = "btnSettings";
             btnSettings.Click += delegate { OpenSettings(); };
             header.Controls.Add(btnSettings);
 
-            btnTheme = UiKit.Icon(Ico.Sun, "切换为浅色模式");
+            btnTheme = UiKit.Icon(Ico.Sun, L.T("切换为浅色模式"));
             btnTheme.Name = "btnTheme";
             btnTheme.Click += delegate { ToggleTheme(); };
             header.Controls.Add(btnTheme);
 
-            btnExport = UiKit.Icon(Ico.Export, "导出所有 Key（需验证主密码）");
+            btnExport = UiKit.Icon(Ico.Export, L.T("导出所有 Key（需验证主密码）"));
             btnExport.Name = "btnExport";
             btnExport.Click += delegate { ExportKeys(); };
             header.Controls.Add(btnExport);
@@ -417,7 +420,7 @@ namespace KeyCenter
             sidebar.Resize += delegate { LayoutSidebar(); };
             bodyPanel.Controls.Add(sidebar);
 
-            lblCatHead = UiKit.Label("分类", T.FontSmall, T.Muted, T.Sidebar);
+            lblCatHead = UiKit.Label(L.T("分类"), T.FontSmall, T.Muted, T.Sidebar);
             sidebar.Controls.Add(lblCatHead);
 
             catHost = new FlowLayoutPanel();
@@ -428,7 +431,7 @@ namespace KeyCenter
             catHost.Padding = new Padding(T.Px(14), T.Px(6), T.Px(14), T.Px(6));
             sidebar.Controls.Add(catHost);
 
-            btnNewCat = UiKit.Ghost("＋ 新建分类");
+            btnNewCat = UiKit.Ghost(L.T("＋ 新建分类"));
             btnNewCat.Name = "btnNewCategory";
             btnNewCat.Click += delegate { CreateCategory(); };
             btnNewCat.SidebarFill = true;
@@ -436,8 +439,14 @@ namespace KeyCenter
             btnNewCat.ApplyTheme();
             sidebar.Controls.Add(btnNewCat);
 
-            lblSidebarFoot = UiKit.Label("AES-256 · 本地存储", T.FontSmall, T.Mix(T.Muted, T.Sidebar, 0.3f), T.Sidebar);
+            lblSidebarFoot = UiKit.Label(L.T("AES-256 · 本地存储"), T.FontSmall, T.Mix(T.Muted, T.Sidebar, 0.3f), T.Sidebar);
             sidebar.Controls.Add(lblSidebarFoot);
+
+            lblAbout = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.Sidebar);
+            lblAbout.Cursor = Cursors.Hand;
+            lblAbout.Name = "lblAbout";
+            lblAbout.Click += delegate { AppInfo.OpenRepo(); };
+            sidebar.Controls.Add(lblAbout);
 
             sidebarResize = new SidebarResizeHandle();
             sidebarResize.DragDelta = delegate(int logicalWidth)
@@ -466,15 +475,15 @@ namespace KeyCenter
             contentHead.Resize += delegate { LayoutContentHead(); };
             content.Controls.Add(contentHead);
 
-            lblTitle = UiKit.Label("全部 Key", T.FontSection, T.Text, T.Bg);
+            lblTitle = UiKit.Label(L.T("全部 Key"), T.FontSection, T.Text, T.Bg);
             contentHead.Controls.Add(lblTitle);
 
-            lblCount = UiKit.Label("0 个 Key", T.FontSmall, T.Muted, T.Bg);
+            lblCount = UiKit.Label(L.KeyCount(0), T.FontSmall, T.Muted, T.Bg);
             contentHead.Controls.Add(lblCount);
 
             btnRevealAll = new GhostButton();
             btnRevealAll.Style = ButtonStyle.Ghost;
-            btnRevealAll.Text = "显示全部";
+            btnRevealAll.Text = L.T("显示全部");
             btnRevealAll.Font = T.FontUi;
             btnRevealAll.Radius = T.Px(9);
             btnRevealAll.Name = "btnRevealAll";
@@ -561,10 +570,10 @@ namespace KeyCenter
             authPw1.Surface = SurfaceRole.Surface;
             authPw1.ApplyTheme();
             authPw1.PasswordMode = true;
-            authPw1.Placeholder = "主密码";
+            authPw1.Placeholder = L.T("主密码");
             authPw1.Name = "txtPassword1";
             authPw1.Box.Name = "txtPassword1";
-            authPw1.SetAccessibleName("主密码");
+            authPw1.SetAccessibleName(L.T("主密码"));
             authPw1.EnterPressed += delegate { OnAuthSubmit(); };
             authCard.Controls.Add(authPw1);
 
@@ -572,10 +581,10 @@ namespace KeyCenter
             authPw2.Surface = SurfaceRole.Surface;
             authPw2.ApplyTheme();
             authPw2.PasswordMode = true;
-            authPw2.Placeholder = "再次输入主密码";
+            authPw2.Placeholder = L.T("再次输入主密码");
             authPw2.Name = "txtPassword2";
             authPw2.Box.Name = "txtPassword2";
-            authPw2.SetAccessibleName("确认主密码");
+            authPw2.SetAccessibleName(L.T("确认主密码"));
             authPw2.EnterPressed += delegate { OnAuthSubmit(); };
             authCard.Controls.Add(authPw2);
 
@@ -583,7 +592,7 @@ namespace KeyCenter
             authErr.TextAlign = ContentAlignment.MiddleCenter;
             authCard.Controls.Add(authErr);
 
-            authBtn = UiKit.Primary("解锁");
+            authBtn = UiKit.Primary(L.T("解锁"));
             authBtn.Surface = SurfaceRole.Surface;
             authBtn.ApplyTheme();
             authBtn.Name = "btnAuth";
@@ -593,6 +602,13 @@ namespace KeyCenter
             authHint = UiKit.Label("", T.FontSmall, T.Muted, T.PanelDark);
             authHint.TextAlign = ContentAlignment.MiddleCenter;
             authCard.Controls.Add(authHint);
+
+            authAbout = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.PanelDark);
+            authAbout.TextAlign = ContentAlignment.MiddleCenter;
+            authAbout.Cursor = Cursors.Hand;
+            authAbout.Name = "authAbout";
+            authAbout.Click += delegate { AppInfo.OpenRepo(); };
+            authCard.Controls.Add(authAbout);
         }
 
         private void RootPaint(object sender, PaintEventArgs e)
@@ -757,7 +773,7 @@ namespace KeyCenter
             lastNormalY = Top;
             SaveWindowConfig();
             AppConfig.Save();
-            ShowToast("窗口大小已恢复默认");
+            ShowToast(L.T("窗口大小已恢复默认"));
         }
 
         private void ApplyScaledLayout()
@@ -907,14 +923,15 @@ namespace KeyCenter
 
         private void LayoutSidebar()
         {
-            if (sidebar == null || catHost == null || btnNewCat == null || lblCatHead == null || lblSidebarFoot == null) return;
+            if (sidebar == null || catHost == null || btnNewCat == null || lblCatHead == null || lblSidebarFoot == null || lblAbout == null) return;
             int w = sidebar.Width;
             int h = sidebar.Height;
             lblCatHead.SetBounds(T.Px(20), T.Px(20), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
-            int catH = Math.Max(T.Px(80), h - T.Px(46) - T.Px(104));
+            int catH = Math.Max(T.Px(80), h - T.Px(46) - T.Px(122));
             catHost.SetBounds(0, T.Px(46), w, catH);
-            btnNewCat.SetBounds(T.Px(14), h - T.Px(86), Math.Max(T.Px(100), w - T.Px(28)), T.Px(38));
-            lblSidebarFoot.SetBounds(T.Px(20), h - T.Px(40), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
+            btnNewCat.SetBounds(T.Px(14), h - T.Px(104), Math.Max(T.Px(100), w - T.Px(28)), T.Px(38));
+            lblAbout.SetBounds(T.Px(20), h - T.Px(66), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
+            lblSidebarFoot.SetBounds(T.Px(20), h - T.Px(42), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
             if (sidebarResize != null)
             {
                 sidebarResize.SetBounds(w - T.Px(7), 0, T.Px(7), h);
@@ -971,7 +988,7 @@ namespace KeyCenter
             LayoutAuthRoot();
             bool setup = setupMode;
             int cardW = T.Px(470);
-            int cardH = setup ? T.Px(468) : T.Px(372);
+            int cardH = setup ? T.Px(486) : T.Px(390);
             authCard.Size = new Size(cardW, cardH);
             int x = (rootAuth.ClientSize.Width - cardW) / 2;
             int y = (rootAuth.ClientSize.Height - cardH) / 2 - T.Px(16);
@@ -991,6 +1008,7 @@ namespace KeyCenter
                 authErr.SetBounds(pad, T.Px(304), innerW, T.Px(22));
                 authBtn.SetBounds(pad, T.Px(332), innerW, T.Px(46));
                 authHint.SetBounds(pad, T.Px(396), innerW, T.Px(20));
+                authAbout.SetBounds(pad, T.Px(428), innerW, T.Px(18));
             }
             else
             {
@@ -998,6 +1016,7 @@ namespace KeyCenter
                 authErr.SetBounds(pad, T.Px(242), innerW, T.Px(22));
                 authBtn.SetBounds(pad, T.Px(270), innerW, T.Px(46));
                 authHint.SetBounds(pad, T.Px(330), innerW, T.Px(20));
+                authAbout.SetBounds(pad, T.Px(354), innerW, T.Px(18));
             }
             authPw2.Visible = setup;
         }
@@ -1035,20 +1054,20 @@ namespace KeyCenter
 
             if (setupMode)
             {
-                authTitle.Text = "创建主密码";
-                authDesc.Text = "所有 Key 都会用这个密码加密保存在 " + Path.GetFileName(dataPath) + " 中。\r\n密码不会以任何形式保存，忘记后无法找回。";
-                authPw1.Placeholder = "设置主密码（至少 6 位）";
-                authPw2.Placeholder = "再次输入主密码";
-                authBtn.Text = "创建并进入";
-                authHint.Text = "AES-256 · PBKDF2-SHA256 · 仅保存在本机";
+                authTitle.Text = L.T("创建主密码");
+                authDesc.Text = L.T("所有 Key 都会用这个密码加密保存在 ") + Path.GetFileName(dataPath) + L.T(" 中。\r\n密码不会以任何形式保存，忘记后无法找回。");
+                authPw1.Placeholder = L.T("设置主密码（至少 6 位）");
+                authPw2.Placeholder = L.T("再次输入主密码");
+                authBtn.Text = L.T("创建并进入");
+                authHint.Text = L.T("AES-256 · PBKDF2-SHA256 · 仅保存在本机");
             }
             else
             {
-                authTitle.Text = "解锁 Key Center";
-                authDesc.Text = "输入主密码，解密你的本地保险箱。";
-                authPw1.Placeholder = "主密码";
-                authBtn.Text = "解锁";
-                authHint.Text = "数据文件：" + Path.GetFileName(dataPath);
+                authTitle.Text = L.T("解锁 Key Center");
+                authDesc.Text = L.T("输入主密码，解密你的本地保险箱。");
+                authPw1.Placeholder = L.T("主密码");
+                authBtn.Text = L.T("解锁");
+                authHint.Text = L.T("数据文件：") + Path.GetFileName(dataPath);
             }
             LayoutAuth();
             if (IsHandleCreated) authPw1.FocusInner();
@@ -1060,7 +1079,7 @@ namespace KeyCenter
             string p1 = authPw1.Value;
             if (p1.Length == 0)
             {
-                SetAuthError("请输入主密码");
+                SetAuthError(L.T("请输入主密码"));
                 return;
             }
 
@@ -1068,12 +1087,12 @@ namespace KeyCenter
             {
                 if (p1.Length < 6)
                 {
-                    SetAuthError("密码至少 6 位");
+                    SetAuthError(L.T("密码至少 6 位"));
                     return;
                 }
                 if (p1 != authPw2.Value)
                 {
-                    SetAuthError("两次输入的密码不一致");
+                    SetAuthError(L.T("两次输入的密码不一致"));
                     return;
                 }
                 BeginCreate(p1);
@@ -1087,13 +1106,13 @@ namespace KeyCenter
         private async void BeginCreate(string p1)
         {
             authBtn.Enabled = false;
-            authBtn.Text = "正在创建…";
+            authBtn.Text = L.T("正在创建…");
             Cursor = Cursors.WaitCursor;
             try
             {
                 VaultData d = new VaultData();
-                d.Categories.Add("工作");
-                d.Categories.Add("个人");
+                d.Categories.Add(L.T("工作"));
+                d.Categories.Add(L.T("个人"));
                 KeyMaterial km = await Task.Run(delegate
                 {
                     KeyMaterial m = null;
@@ -1120,24 +1139,24 @@ namespace KeyCenter
                 authPw1.SetText("");
                 authPw2.SetText("");
                 EnterMain(false);
-                ShowToast("保险箱已创建，开始添加你的第一个 Key 吧");
+                ShowToast(L.T("保险箱已创建，开始添加你的第一个 Key 吧"));
             }
             catch (Exception ex)
             {
-                SetAuthError("无法写入数据文件：" + ex.Message);
+                SetAuthError(L.T("无法写入数据文件：") + ex.Message);
             }
             finally
             {
                 Cursor = Cursors.Default;
                 authBtn.Enabled = true;
-                if (!unlocked) authBtn.Text = setupMode ? "创建并进入" : "解锁";
+                if (!unlocked) authBtn.Text = setupMode ? L.T("创建并进入") : L.T("解锁");
             }
         }
 
         private async void BeginUnlock(string p1)
         {
             authBtn.Enabled = false;
-            authBtn.Text = "正在解锁…";
+            authBtn.Text = L.T("正在解锁…");
             Cursor = Cursors.WaitCursor;
             try
             {
@@ -1155,19 +1174,19 @@ namespace KeyCenter
             }
             catch (WrongPasswordException)
             {
-                SetAuthError("密码错误，请重试");
+                SetAuthError(L.T("密码错误，请重试"));
                 authPw1.SetText("");
                 authPw1.FocusInner();
             }
             catch (Exception ex)
             {
-                SetAuthError("读取失败：" + ex.Message);
+                SetAuthError(L.T("读取失败：") + ex.Message);
             }
             finally
             {
                 Cursor = Cursors.Default;
                 authBtn.Enabled = true;
-                if (!unlocked) authBtn.Text = setupMode ? "创建并进入" : "解锁";
+                if (!unlocked) authBtn.Text = setupMode ? L.T("创建并进入") : L.T("解锁");
             }
         }
 
@@ -1200,18 +1219,18 @@ namespace KeyCenter
             BuildCategories();
             RefreshCards();
             UpdateSaveStatus();
-            if (existed) ShowToast("已解锁");
+            if (existed) ShowToast(L.T("已解锁"));
         }
 
         private void Lock(string info)
         {
             if (!unlocked) return;
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (saveInProgress || savePending)
             {
                 lockWhenIdle = true;
                 pendingLockInfo = info;
-                ShowToast("正在保存，保存完成后自动锁定");
+                ShowToast(L.T("正在保存，保存完成后自动锁定"));
                 return;
             }
             if (dirty)
@@ -1221,10 +1240,10 @@ namespace KeyCenter
                 {
                     lockWhenIdle = true;
                     pendingLockInfo = info;
-                    ShowToast("正在重试保存，保存完成后自动锁定");
+                    ShowToast(L.T("正在重试保存，保存完成后自动锁定"));
                     return;
                 }
-                ShowToast("当前修改无法保存，已取消锁定；请检查磁盘后重试");
+                ShowToast(L.T("当前修改无法保存，已取消锁定；请检查磁盘后重试"));
                 return;
             }
             DoLock(info);
@@ -1264,7 +1283,7 @@ namespace KeyCenter
             if (OwnedForms.Length > 0) return;
             int minutes = vault.AutoLockMinutes;
             if (minutes <= 0) return;
-            if (T.IdleSeconds() >= minutes * 60) Lock("已因长时间无操作自动锁定");
+            if (T.IdleSeconds() >= minutes * 60) Lock(L.T("已因长时间无操作自动锁定"));
         }
 
         private void ClearClipboardIfCopied()
@@ -1301,7 +1320,7 @@ namespace KeyCenter
             if (selectedCategory != null && selectedCategory.Length == 0 && uncat == 0)
                 selectedCategory = null;
 
-            CategoryButton all = new CategoryButton("全部", true, null, vault.Items.Count);
+            CategoryButton all = new CategoryButton(L.T("全部"), true, null, vault.Items.Count);
             AddCat(all);
             for (int i = 0; i < vault.Categories.Count; i++)
             {
@@ -1313,7 +1332,7 @@ namespace KeyCenter
                 }
                 AddCat(new CategoryButton(cat, false, cat, count));
             }
-            if (uncat > 0) AddCat(new CategoryButton("未分类", false, "", uncat));
+            if (uncat > 0) AddCat(new CategoryButton(L.T("未分类"), false, "", uncat));
             UpdateCatSelection();
             LayoutSidebar();
         }
@@ -1347,15 +1366,15 @@ namespace KeyCenter
 
         private void CreateCategory()
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null) return;
-            string name = PromptDialog.Ask(this, "新建分类", "分类名称", "");
+            string name = PromptDialog.Ask(this, L.T("新建分类"), L.T("分类名称"), "");
             if (name == null) return;
             name = name.Trim();
             if (name.Length == 0) return;
             if (vault.Categories.Contains(name))
             {
-                InfoDialog.Show(this, "提示", "这个分类已经存在了。");
+                InfoDialog.Show(this, L.T("提示"), L.T("这个分类已经存在了。"));
                 return;
             }
             vault.Categories.Add(name);
@@ -1363,8 +1382,8 @@ namespace KeyCenter
             selectedCategory = name;
             BuildCategories();
             RefreshCards();
-            if (saved) ShowToast("已创建分类「" + name + "」，正在保存");
-            else ShowToast("分类已创建，但保存失败，请检查磁盘后重试");
+            if (saved) ShowToast(L.T("已创建分类「") + name + L.T("」，正在保存"));
+            else ShowToast(L.T("分类已创建，但保存失败，请检查磁盘后重试"));
         }
 
         // =====================================================================
@@ -1387,17 +1406,17 @@ namespace KeyCenter
 
             if (list.Count == 0)
             {
-                if (q.Length > 0) cardList.SetEmptyState("没有匹配的 Key", "换个关键词，或者清空搜索框");
-                else if (selectedCategory != null) cardList.SetEmptyState("这个分类还是空的", "点击右上角「添加」把 Key 放进来");
-                else cardList.SetEmptyState("还没有保存任何 Key", "点击右上角「添加」，保存你的第一个 API Key");
+                if (q.Length > 0) cardList.SetEmptyState(L.T("没有匹配的 Key"), L.T("换个关键词，或者清空搜索框"));
+                else if (selectedCategory != null) cardList.SetEmptyState(L.T("这个分类还是空的"), L.T("点击右上角「添加」把 Key 放进来"));
+                else cardList.SetEmptyState(L.T("还没有保存任何 Key"), L.T("点击右上角「添加」，保存你的第一个 API Key"));
             }
             cardList.SetItems(list, revealedIds);
 
-            if (q.Length > 0) lblTitle.Text = "搜索结果";
-            else if (selectedCategory == null) lblTitle.Text = "全部 Key";
-            else if (selectedCategory.Length == 0) lblTitle.Text = "未分类";
+            if (q.Length > 0) lblTitle.Text = L.T("搜索结果");
+            else if (selectedCategory == null) lblTitle.Text = L.T("全部 Key");
+            else if (selectedCategory.Length == 0) lblTitle.Text = L.T("未分类");
             else lblTitle.Text = selectedCategory;
-            lblCount.Text = list.Count.ToString() + " 个 Key" + (q.Length > 0 ? "　·　关键词：" + q : "");
+            lblCount.Text = L.KeyCount(list.Count) + (q.Length > 0 ? L.T("　·　关键词：") + q : "");
             UpdateRevealAllButton();
         }
 
@@ -1477,7 +1496,7 @@ namespace KeyCenter
                     break;
                 }
             }
-            btnRevealAll.Text = all ? "全部隐藏" : "显示全部";
+            btnRevealAll.Text = all ? L.T("全部隐藏") : L.T("显示全部");
         }
 
         private void ToggleRevealAll()
@@ -1512,7 +1531,7 @@ namespace KeyCenter
         // =====================================================================
         private void AddEntry()
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null) return;
             List<string> names = new List<string>();
             for (int i = 0; i < vault.Items.Count; i++) names.Add(vault.Items[i].Name);
@@ -1530,14 +1549,14 @@ namespace KeyCenter
                 selectedCategory = dlg.Result.Category;
                 BuildCategories();
                 RefreshCards();
-                if (saved) ShowToast("已添加「" + dlg.Result.Name + "」，正在保存");
-                else ShowToast("已添加，但保存失败，请检查磁盘后重试");
+                if (saved) ShowToast(L.T("已添加「") + dlg.Result.Name + L.T("」，正在保存"));
+                else ShowToast(L.T("已添加，但保存失败，请检查磁盘后重试"));
             }
         }
 
         private void EditEntry(KeyItem item)
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null || item == null) return;
             int idx = vault.Items.IndexOf(item);
             if (idx < 0) return;
@@ -1562,23 +1581,23 @@ namespace KeyCenter
                 bool saved = QueueSave();
                 BuildCategories();
                 RefreshCards();
-                if (saved) ShowToast("已更新「" + cur.Name + "」，正在保存");
-                else ShowToast("已修改，但保存失败，请检查磁盘后重试");
+                if (saved) ShowToast(L.T("已更新「") + cur.Name + L.T("」，正在保存"));
+                else ShowToast(L.T("已修改，但保存失败，请检查磁盘后重试"));
             }
         }
 
         private void DeleteEntry(KeyItem item)
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null || item == null) return;
-            if (!ConfirmDialog.Ask(this, "删除 Key",
-                "确定要删除「" + item.Name + "」吗？\r\n\r\n此操作不可撤销。", "删除", true)) return;
+            if (!ConfirmDialog.Ask(this, L.T("删除 Key"),
+                L.T("确定要删除「") + item.Name + L.T("」吗？\r\n\r\n此操作不可撤销。"), L.T("删除"), true)) return;
             vault.Items.Remove(item);
             bool saved = QueueSave();
             BuildCategories();
             RefreshCards();
-            if (saved) ShowToast("已删除「" + item.Name + "」，正在保存");
-            else ShowToast("已删除，但保存失败，请检查磁盘后重试");
+            if (saved) ShowToast(L.T("已删除「") + item.Name + L.T("」，正在保存"));
+            else ShowToast(L.T("已删除，但保存失败，请检查磁盘后重试"));
         }
 
         private void CopyKey(KeyItem item)
@@ -1622,7 +1641,7 @@ namespace KeyCenter
                 lastCopied = clipValue;
                 clipValue = null;
                 if (clipTimer != null) clipTimer.Stop();
-                ShowToast("已复制" + clipDisplay);
+                ShowToast(L.T("已复制") + clipDisplay);
             }
             catch (Exception)
             {
@@ -1633,14 +1652,14 @@ namespace KeyCenter
                 else
                 {
                     clipValue = null;
-                    ShowToast("复制失败：剪贴板被其他程序占用");
+                    ShowToast(L.T("复制失败：剪贴板被其他程序占用"));
                 }
             }
         }
 
         private void SetDefaultKey(KeyItem item, string keyId)
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (item == null || string.IsNullOrEmpty(keyId)) return;
             if (item.FindKey(keyId) == null) return;
             item.DefaultKeyId = keyId;
@@ -1649,8 +1668,8 @@ namespace KeyCenter
             RefreshCards();
             SubKey k = item.FindKey(keyId);
             string display = k == null || string.IsNullOrEmpty(k.Label) ? "Key" : k.Label;
-            if (saved) ShowToast("已将「" + display + "」设为默认 Key，正在保存");
-            else ShowToast("已切换默认 Key，但保存失败，请检查磁盘后重试");
+            if (saved) ShowToast(L.T("已将「") + display + L.T("」设为默认 Key，正在保存"));
+            else ShowToast(L.T("已切换默认 Key，但保存失败，请检查磁盘后重试"));
         }
 
         // =====================================================================
@@ -1659,17 +1678,17 @@ namespace KeyCenter
         private async void ExportKeys()
         {
             if (!unlocked || vault == null) return;
-            if (exportInProgress) { ShowToast("正在导出，请稍候"); return; }
-            string pwd = PasswordPromptDialog.Ask(this, "导出所有 Key",
-                "为了确认是本人操作，请输入一次主密码。\r\n导出文件是明文，请妥善保管。",
+            if (exportInProgress) { ShowToast(L.T("正在导出，请稍候")); return; }
+            string pwd = PasswordPromptDialog.Ask(this, L.T("导出所有 Key"),
+                L.T("为了确认是本人操作，请输入一次主密码。\r\n导出文件是明文，请妥善保管。"),
                 delegate(string input) { return input == password; });
             if (pwd == null) return;
 
             string defaultDir = Path.GetDirectoryName(dataPath);
             using (SaveFileDialog sfd = new SaveFileDialog())
             {
-                sfd.Title = "导出所有 Key";
-                sfd.Filter = "文本文件 (*.txt)|*.txt";
+                sfd.Title = L.T("导出所有 Key");
+                sfd.Filter = L.T("文本文件 (*.txt)|*.txt");
                 sfd.FileName = "keycenter-keys-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt";
                 if (!string.IsNullOrEmpty(defaultDir)) sfd.InitialDirectory = defaultDir;
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
@@ -1682,7 +1701,7 @@ namespace KeyCenter
                 }
                 catch (Exception ex)
                 {
-                    InfoDialog.Show(this, "导出失败", "生成导出快照失败：\r\n" + ex.Message);
+                    InfoDialog.Show(this, L.T("导出失败"), L.T("生成导出快照失败：\r\n") + ex.Message);
                     return;
                 }
                 string temp = fileName + ".kc-export-" + Guid.NewGuid().ToString("N") + ".tmp";
@@ -1695,7 +1714,7 @@ namespace KeyCenter
                     if (gen != sessionGen || !unlocked)
                     {
                         // 只清理本次导出创建的临时文件，绝不删除用户已存在的目标文件
-                        ShowToast("导出期间会话已锁定，未生成明文文件");
+                        ShowToast(L.T("导出期间会话已锁定，未生成明文文件"));
                         return;
                     }
                     string backup = fileName + ".kc-old-" + Guid.NewGuid().ToString("N") + ".tmp";
@@ -1720,7 +1739,7 @@ namespace KeyCenter
                         {
                             File.Move(temp, fileName);
                         }
-                        ShowToast("已导出到 " + Path.GetFileName(fileName));
+                        ShowToast(L.T("已导出到 ") + Path.GetFileName(fileName));
                     }
                     catch (Exception ex)
                     {
@@ -1732,12 +1751,12 @@ namespace KeyCenter
                         catch (Exception) { }
                         try { if (File.Exists(backup)) File.Delete(backup); }
                         catch (Exception) { }
-                        if (!IsDisposed && !Disposing) InfoDialog.Show(this, "导出失败", "无法写入文件：\r\n" + ex.Message);
+                        if (!IsDisposed && !Disposing) InfoDialog.Show(this, L.T("导出失败"), L.T("无法写入文件：\r\n") + ex.Message);
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (!IsDisposed && !Disposing) InfoDialog.Show(this, "导出失败", "无法生成导出内容：\r\n" + ex.Message);
+                    if (!IsDisposed && !Disposing) InfoDialog.Show(this, L.T("导出失败"), L.T("无法生成导出内容：\r\n") + ex.Message);
                 }
                 finally
                 {
@@ -1760,12 +1779,12 @@ namespace KeyCenter
             int itemCount = vault.Items.Count;
             int keyCount = 0;
             for (int i = 0; i < itemCount; i++) keyCount += vault.Items[i].Keys == null ? 0 : vault.Items[i].Keys.Count;
-            sb.AppendLine("Key Center 明文导出");
-            sb.AppendLine("导出时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            sb.AppendLine("条目数：" + itemCount + "　Key 总数：" + keyCount);
-            sb.AppendLine("说明：此文件包含明文 Key，请勿上传网盘或发给他人。");
+            sb.AppendLine(L.T("Key Center 明文导出"));
+            sb.AppendLine(L.T("导出时间：") + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            sb.AppendLine(L.T("条目数：") + itemCount + L.T("　Key 总数：") + keyCount);
+            sb.AppendLine(L.T("说明：此文件包含明文 Key，请勿上传网盘或发给他人。"));
             sb.AppendLine();
-            sb.AppendLine("========== 分类 ==========");
+            sb.AppendLine(L.T("========== 分类 =========="));
             for (int i = 0; i < vault.Categories.Count; i++) sb.AppendLine("- " + vault.Categories[i]);
             sb.AppendLine();
 
@@ -1789,20 +1808,20 @@ namespace KeyCenter
                 }
                 if (group.Count == 0) continue;
                 sb.AppendLine("==========================================");
-                sb.AppendLine(cat.Length == 0 ? "【未分类】" : ("【" + cat + "】"));
+                sb.AppendLine(cat.Length == 0 ? L.T("【未分类】") : ("【" + cat + "】"));
                 sb.AppendLine("==========================================");
                 for (int gi = 0; gi < group.Count; gi++)
                 {
                     KeyItem it = group[gi];
                     sb.AppendLine();
-                    sb.AppendLine("名称：" + it.Name);
-                    if (!string.IsNullOrEmpty(it.Note)) sb.AppendLine("备注：" + it.Note);
-                    sb.AppendLine("创建：" + FormatTime(it.Created) + "    修改：" + FormatTime(it.Updated));
+                    sb.AppendLine(L.T("名称：") + it.Name);
+                    if (!string.IsNullOrEmpty(it.Note)) sb.AppendLine(L.T("备注：") + it.Note);
+                    sb.AppendLine(L.T("创建：") + FormatTime(it.Created) + L.T("    修改：") + FormatTime(it.Updated));
                     for (int ki = 0; ki < it.Keys.Count; ki++)
                     {
                         SubKey k = it.Keys[ki];
                         string label = string.IsNullOrEmpty(k.Label) ? ("Key " + (ki + 1)) : k.Label;
-                        string mark = (k.Id == it.DefaultKeyId) ? "【默认】" : "";
+                        string mark = (k.Id == it.DefaultKeyId) ? L.T("【默认】") : "";
                         sb.AppendLine("  · " + label + mark);
                         sb.AppendLine("    " + k.Value);
                     }
@@ -1841,9 +1860,9 @@ namespace KeyCenter
             dirty = true;
             if (vaultKeys == null)
             {
-                lastSaveError = "会话密钥不可用，请锁定后重新解锁";
+                lastSaveError = L.T("会话密钥不可用，请锁定后重新解锁");
                 UpdateSaveStatus();
-                ShowToast("保存失败：会话密钥不可用，请锁定后重新解锁");
+                ShowToast(L.T("保存失败：会话密钥不可用，请锁定后重新解锁"));
                 return false;
             }
             // UI 线程只做快照；序列化、AES/HMAC、写盘全部交给串行后台保存队列
@@ -1853,10 +1872,10 @@ namespace KeyCenter
             }
             catch (Exception ex)
             {
-                lastSaveError = "生成保存快照失败：" + ex.Message;
+                lastSaveError = L.T("生成保存快照失败：") + ex.Message;
                 dirty = true;
                 UpdateSaveStatus();
-                ShowToast("保存失败：生成快照失败（Ctrl+S 重试）");
+                ShowToast(L.T("保存失败：生成快照失败（Ctrl+S 重试）"));
                 return false;
             }
             queuedVersion = modelVersion;
@@ -1882,7 +1901,7 @@ namespace KeyCenter
                 try
                 {
                     temp = vaultKeys == null ? null : vaultKeys.Clone();
-                    if (temp == null) throw new InvalidOperationException("会话密钥已失效");
+                    if (temp == null) throw new InvalidOperationException(L.T("会话密钥已失效"));
                     KeyMaterial use = temp;
                     await Task.Run(delegate
                     {
@@ -1906,7 +1925,7 @@ namespace KeyCenter
                     savePending = false;
                     queuedSnapshot = null;
                     UpdateSaveStatus();
-                    ShowToast("保存失败：" + ex.Message + "（Ctrl+S 重试）");
+                    ShowToast(L.T("保存失败：") + ex.Message + L.T("（Ctrl+S 重试）"));
                     break;
                 }
             }
@@ -1932,7 +1951,7 @@ namespace KeyCenter
                     }
                     lockWhenIdle = false;
                     pendingLockInfo = null;
-                    ShowToast("保存失败，已取消锁定；可 Ctrl+S 重试后再次锁定");
+                    ShowToast(L.T("保存失败，已取消锁定；可 Ctrl+S 重试后再次锁定"));
                 }
                 if (closeWhenSaved)
                 {
@@ -1951,11 +1970,11 @@ namespace KeyCenter
 
         private void RetrySave()
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null) return;
             if (vaultKeys == null)
             {
-                ShowToast("保存失败：会话密钥不可用，请锁定后重新解锁");
+                ShowToast(L.T("保存失败：会话密钥不可用，请锁定后重新解锁"));
                 return;
             }
             lastSaveError = null;
@@ -1965,11 +1984,11 @@ namespace KeyCenter
             }
             catch (Exception ex)
             {
-                lastSaveError = "生成保存快照失败：" + ex.Message;
+                lastSaveError = L.T("生成保存快照失败：") + ex.Message;
                 dirty = true;
                 savePending = false;
                 UpdateSaveStatus();
-                ShowToast("保存失败：生成快照失败");
+                ShowToast(L.T("保存失败：生成快照失败"));
                 return;
             }
             savePending = true;
@@ -1981,7 +2000,7 @@ namespace KeyCenter
         private void UpdateSaveStatus()
         {
             if (lblSub == null) return;
-            const string baseText = "本地加密 · API Key 保险箱";
+            string baseText = L.T("本地加密 · API Key 保险箱");
             if (!unlocked)
             {
                 lblSub.Text = baseText;
@@ -1990,12 +2009,12 @@ namespace KeyCenter
             }
             if (saveInProgress || savePending)
             {
-                lblSub.Text = baseText + " · 保存中…";
+                lblSub.Text = baseText + L.T(" · 保存中…");
                 lblSub.ForeColor = T.Muted;
             }
             else if (dirty)
             {
-                lblSub.Text = baseText + " · 保存失败，Ctrl+S 重试（点此重试）";
+                lblSub.Text = baseText + L.T(" · 保存失败，Ctrl+S 重试（点此重试）");
                 lblSub.ForeColor = T.Danger;
                 lblSub.Cursor = Cursors.Hand;
             }
@@ -2011,23 +2030,43 @@ namespace KeyCenter
         private void ShowSavedStatus()
         {
             if (!unlocked || lblSub == null) return;
-            lblSub.Text = "本地加密 · API Key 保险箱 · 已保存";
+            lblSub.Text = L.T("本地加密 · API Key 保险箱 · 已保存");
             lblSub.ForeColor = T.Success;
             lblSub.Cursor = Cursors.Default;
             lblSub.Invalidate();
             if (savedFlashTimer != null) { savedFlashTimer.Stop(); savedFlashTimer.Start(); }
         }
 
+        private void RestartApp()
+        {
+            try
+            {
+                string exe = Application.ExecutablePath;
+                string args = "--data \"" + dataPath + "\"";
+                string cmd = "/c timeout /t 2 >nul & start \"\" \"" + exe + "\" " + args;
+                Process.Start(new ProcessStartInfo("cmd.exe", cmd)
+                {
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = false
+                });
+            }
+            catch (Exception) { }
+            Close();
+        }
+
         private void OpenSettings()
         {
-            if (pwdChanging) { ShowToast("正在更新主密码，请稍候"); return; }
+            if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null) return;
             bool needRefresh = false;
+            bool langChanged = false;
             using (SettingsDialog dlg = new SettingsDialog(vault, dataPath, AppConfig.ThemeMode,
                 delegate(ThemeMode mode) { SetThemeMode(mode); },
                 delegate { ResetWindowSize(); }))
             {
                 dlg.ShowDialog(this);
+                langChanged = dlg.LanguageChanged;
                 if (dlg.PasswordChanged && !string.IsNullOrEmpty(dlg.NewPassword))
                 {
                     BeginChangePassword(dlg.NewPassword);
@@ -2037,6 +2076,18 @@ namespace KeyCenter
                     QueueSave();
                     needRefresh = true;
                 }
+            }
+            if (langChanged)
+            {
+                AppConfig.Save();
+                if (ConfirmDialog.Ask(this, L.T("应用语言"),
+                    L.T("语言设置在重启应用后生效。是否立即重启？"),
+                    L.T("立即重启"), false))
+                {
+                    RestartApp();
+                    return;
+                }
+                ShowToast(L.T("语言已保存，重启应用后生效"));
             }
             if (!needRefresh) return;
             if (selectedCategory != null && selectedCategory.Length > 0 && !vault.Categories.Contains(selectedCategory))
@@ -2055,7 +2106,7 @@ namespace KeyCenter
             string oldPw = password;
             KeyMaterial oldKeys = vaultKeys;
             Cursor = Cursors.WaitCursor;
-            ShowToast("正在更新主密码…");
+            ShowToast(L.T("正在更新主密码…"));
             KeyMaterial newKeys = null;
             bool committed = false;
             try
@@ -2109,7 +2160,7 @@ namespace KeyCenter
                     vaultKeys = oldKeys;
                     password = oldPw;
                 }
-                if (!IsDisposed) InfoDialog.Show(this, "更新失败", ex.Message);
+                if (!IsDisposed) InfoDialog.Show(this, L.T("更新失败"), ex.Message);
             }
             finally
             {
@@ -2122,7 +2173,7 @@ namespace KeyCenter
                 try
                 {
                     UpdateSaveStatus();
-                    ShowToast("主密码已更新");
+                    ShowToast(L.T("主密码已更新"));
                 }
                 catch (Exception) { }
             }
@@ -2163,7 +2214,7 @@ namespace KeyCenter
                 }
                 if (keyData == (Keys.Control | Keys.L))
                 {
-                    Lock("已锁定，请输入主密码");
+                    Lock(L.T("已锁定，请输入主密码"));
                     return true;
                 }
                 if (keyData == (Keys.Control | Keys.T))

@@ -91,6 +91,7 @@ Write-Host "图标已生成：keycenter.ico"
 # ---------- 2. 编译 ----------
 $src = @(
     'Program.cs',
+    'I18n.cs',
     'Theme.cs',
     'Vault.cs',
     'UiControls.cs',

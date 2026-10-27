@@ -106,12 +106,12 @@ namespace KeyCenter
 
         private static readonly string[] Labels = new string[]
         {
-            "创建时间：新 → 旧",
-            "创建时间：旧 → 新",
-            "编辑时间：新 → 旧",
-            "编辑时间：旧 → 新",
-            "名称：A → Z",
-            "名称：Z → A"
+            L.T("创建时间：新 → 旧"),
+            L.T("创建时间：旧 → 新"),
+            L.T("编辑时间：新 → 旧"),
+            L.T("编辑时间：旧 → 新"),
+            L.T("名称：A → Z"),
+            L.T("名称：Z → A")
         };
 
         public static void CloseCurrent()
@@ -131,12 +131,12 @@ namespace KeyCenter
             if (i < 0 || i >= Labels.Length) i = 0;
             switch (mode)
             {
-                case SortMode.CreatedDesc: return "创建 ↓";
-                case SortMode.CreatedAsc: return "创建 ↑";
-                case SortMode.UpdatedDesc: return "编辑 ↓";
-                case SortMode.UpdatedAsc: return "编辑 ↑";
-                case SortMode.NameAsc: return "名称 A→Z";
-                default: return "名称 Z→A";
+                case SortMode.CreatedDesc: return L.T("创建 ↓");
+                case SortMode.CreatedAsc: return L.T("创建 ↑");
+                case SortMode.UpdatedDesc: return L.T("编辑 ↓");
+                case SortMode.UpdatedAsc: return L.T("编辑 ↑");
+                case SortMode.NameAsc: return L.T("名称 A→Z");
+                default: return L.T("名称 Z→A");
             }
         }
 
@@ -268,14 +268,14 @@ namespace KeyCenter
             nameLbl.AutoEllipsis = true;
             nameLbl.Name = "drawer_name_" + key.Id;
 
-            badgeLbl = UiKit.Label("默认", T.FontSmall, T.Accent, T.AccentSoft);
+            badgeLbl = UiKit.Label(L.T("默认"), T.FontSmall, T.Accent, T.AccentSoft);
             badgeLbl.TextAlign = ContentAlignment.MiddleCenter;
             badgeLbl.Visible = isDefault;
 
             valueLbl = UiKit.Label("", T.FontMono, T.Muted, T.Card);
             valueLbl.AutoEllipsis = true;
 
-            copyBtn = UiKit.Icon(Ico.Copy, "复制这条 Key");
+            copyBtn = UiKit.Icon(Ico.Copy, L.T("复制这条 Key"));
             copyBtn.SurfaceCustom = true;
             copyBtn.Name = "drawer_copy_" + key.Id;
             copyBtn.Click += delegate
@@ -283,7 +283,7 @@ namespace KeyCenter
                 if (CopyRequested != null) CopyRequested(key, display, Revealed);
             };
 
-            viewBtn = UiKit.Icon(Ico.View, "显示 / 隐藏");
+            viewBtn = UiKit.Icon(Ico.View, L.T("显示 / 隐藏"));
             viewBtn.SurfaceCustom = true;
             viewBtn.Name = "drawer_reveal_" + key.Id;
             viewBtn.Click += delegate
@@ -292,7 +292,7 @@ namespace KeyCenter
                 ApplyValue();
             };
 
-            starBtn = UiKit.Icon(isDefault ? Ico.StarFill : Ico.Star, isDefault ? "当前默认 Key" : "设为默认 Key");
+            starBtn = UiKit.Icon(isDefault ? Ico.StarFill : Ico.Star, isDefault ? L.T("当前默认 Key") : L.T("设为默认 Key"));
             starBtn.SurfaceCustom = true;
             starBtn.Name = "drawer_default_" + key.Id;
             starBtn.IconColorOverride = isDefault ? T.Accent : T.Muted;
@@ -424,19 +424,19 @@ namespace KeyCenter
 
             LabelInput = new DarkInput(false);
             LabelInput.Surface = SurfaceRole.Surface;
-            LabelInput.Placeholder = "备注名（可选）";
+            LabelInput.Placeholder = L.T("备注名（可选）");
             LabelInput.Name = "keyLabel_" + keyId;
             LabelInput.Box.Name = LabelInput.Name;
             LabelInput.SetText(label ?? "");
             Controls.Add(LabelInput);
             ValueInput = new DarkInput(false);
             ValueInput.Surface = SurfaceRole.Surface;
-            ValueInput.Placeholder = "粘贴 Key…";
+            ValueInput.Placeholder = L.T("粘贴 Key…");
             ValueInput.Name = "keyValue_" + keyId;
             ValueInput.Box.Name = ValueInput.Name;
             ValueInput.SetText(value ?? "");
             Controls.Add(ValueInput);
-            DefaultBtn = UiKit.Icon(Ico.Star, "设为默认 Key");
+            DefaultBtn = UiKit.Icon(Ico.Star, L.T("设为默认 Key"));
             DefaultBtn.SurfaceCustom = true;
             DefaultBtn.Name = "setDefault_" + keyId;
             DefaultBtn.Click += delegate
@@ -444,7 +444,7 @@ namespace KeyCenter
                 if (DefaultRequested != null) DefaultRequested(this);
             };
             Controls.Add(DefaultBtn);
-            DeleteBtn = UiKit.Icon(Ico.Delete, "删除这条 Key");
+            DeleteBtn = UiKit.Icon(Ico.Delete, L.T("删除这条 Key"));
             DeleteBtn.SurfaceCustom = true;
             DeleteBtn.Name = "deleteKey_" + keyId;
             DeleteBtn.Click += delegate

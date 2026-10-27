@@ -518,6 +518,7 @@ namespace KeyCenter
         public static int SidebarLogicalWidth = 236;
         public static SortMode Sort = SortMode.CreatedDesc;
         public static bool GlassDisabled = false;
+        public static string Language = "zh";
 
         private static string CfgPath
         {
@@ -548,9 +549,9 @@ namespace KeyCenter
         {
             get
             {
-                if (ThemeMode == ThemeMode.Dark) return "深色";
-                if (ThemeMode == ThemeMode.Light) return "浅色";
-                return "跟随系统";
+                if (ThemeMode == ThemeMode.Dark) return L.T("深色");
+                if (ThemeMode == ThemeMode.Light) return L.T("浅色");
+                return L.T("跟随系统");
             }
         }
 
@@ -581,7 +582,7 @@ namespace KeyCenter
                     else if (key == "winmax") WinMaximized = val == "1";
                     else if (key == "sidebar") { int n; if (int.TryParse(val, out n)) SidebarLogicalWidth = n; }
                     else if (key == "sort") { int n; if (int.TryParse(val, out n) && n >= 0 && n <= 5) Sort = (SortMode)n; }
-                }
+                    else if (key == "language") { Language = val.Equals("en", StringComparison.OrdinalIgnoreCase) ? "en" : "zh"; }                }
             }
             catch (Exception) { }
         }
@@ -591,7 +592,7 @@ namespace KeyCenter
             try
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("# Key Center 配置（不含任何密钥）");
+                sb.AppendLine(L.T("# Key Center 配置（不含任何密钥）"));
                 string theme = ThemeMode == ThemeMode.Dark ? "dark" : (ThemeMode == ThemeMode.Light ? "light" : "system");
                 sb.AppendLine("theme=" + theme);
                 if (WinHasBounds)
@@ -604,6 +605,7 @@ namespace KeyCenter
                 }
                 sb.AppendLine("sidebar=" + SidebarLogicalWidth);
                 sb.AppendLine("sort=" + ((int)Sort));
+                sb.AppendLine("language=" + (Language == "en" ? "en" : "zh"));
                 File.WriteAllText(CfgPath, sb.ToString());
             }
             catch (Exception) { }

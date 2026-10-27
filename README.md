@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <img src="assets/icon.png" width="96" height="96" alt="Key Center icon" />
 
@@ -39,7 +39,7 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 
 ## 为什么选择 Key Center
 
-- **本地优先**：所有数据只保存在本机，加密后落盘；程序没有任何网络请求。
+- **本地优先**：所有数据只保存在本机，加密后落盘；程序自身不发起网络请求，界面中的 GitHub 链接由系统浏览器打开。
 - **绿色便携**：单个 `KeyCenter.exe`，不需要安装、不写注册表、不产生用户目录垃圾。
 - **真正的多 Key 条目**：同一服务、同一项目的多个 Key 可以放在一个条目里，随时切换默认 Key。
 - **专注而完整**：分类、搜索、排序、复制、显示/隐藏、明文导出、自动锁定、窗口记忆，一样不少。
@@ -73,6 +73,17 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 - 「显示全部 / 全部隐藏」可批量控制当前列表的显示状态。
 - 复制后，本程序写入的剪贴板内容会在锁定或退出时自动清理（若没有被其他内容覆盖）。
 
+### 双语界面
+
+- 支持 **简体中文 / English** 两种界面语言，覆盖主界面、解锁与创建密码、设置、全部弹窗、提示、错误信息、空状态和导出内容；
+- 在 设置 → 右上角「中文 / English」切换；选择后重启应用生效；
+- 界面全部使用同一套文案字典，后续功能可以继续补充双语条目。
+
+### 版本与项目入口
+
+- 主界面侧边栏、解锁界面和设置界面都会显示当前版本号（例如 `v1.8.5`）与 **GitHub** 仓库入口；
+- 点击 GitHub 文字会使用系统默认浏览器打开仓库首页，方便查看源码、反馈问题和下载最新版本。
+
 ### 明文导出
 
 - 右上角下载图标或 `Ctrl + E` 可将全部 Key 导出为按分类整理的 `txt` 文件。
@@ -100,9 +111,13 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 |:---:|:---:|
 | ![浅色主题](screenshots/main-light.png) | ![深色主题](screenshots/main-dark.png) |
 
-| 设置 | 搜索 |
+| 设置（含语言切换） | 搜索 |
 |:---:|:---:|
-| ![设置](screenshots/settings-light.png) | ![搜索](screenshots/search-dark.png) |
+| ![设置](screenshots/settings-light.png) | ![搜索](screenshots/search-light.png) |
+
+| 添加 Key | English UI |
+|:---:|:---:|
+| ![添加 Key](screenshots/entry-light.png) | ![English UI](screenshots/main-en.png) |
 
 ## 快速开始
 
@@ -117,6 +132,7 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 2. 将 `KeyCenter.exe` 放到任意文件夹，双击运行。
 3. 第一次打开时设置 **主密码**（至少 6 位）。
 4. 之后每次打开输入主密码即可看到全部 Key。
+5. 首次启动默认中文；设置右上角可切换 **English**，重启应用后生效。
 
 无需安装，不写注册表。卸载时直接删除程序和数据文件即可。
 
@@ -136,7 +152,7 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 
 - **加密算法**：AES-256-CBC + PBKDF2-HMAC-SHA256（210,000 次迭代）+ HMAC-SHA256 完整性校验。
 - **主密码不保存**：主密码只用于派生密钥，不会以任何形式保存；忘记后无法找回。
-- **完全离线**：程序不发起网络请求，不上传、不遥测、不检查更新。
+- **完全离线**：程序自身不发起网络请求，不上传、不遥测、不检查更新；点击界面中的 GitHub 链接会交给系统浏览器处理。
 - **安全写入**：先写临时文件并落盘，再替换正式文件；旧版本保留为加密的 `.bak` 备份。
 - **自动锁定**：无操作达到设定时间后自动锁定；锁定或退出时清理会话密钥和本程序写入的剪贴板内容。
 - **单实例保护**：同一数据文件同时只允许一个实例打开，避免并发写入。
@@ -151,7 +167,7 @@ Key Center 只做一件事：把你散落在各个软件、项目和终端里的
 KeyCenter.exe        主程序（单文件、绿色运行）
 keycenter.dat        加密后的本地数据文件（首次创建密码后生成）
 keycenter.dat.bak    上一次成功保存的加密备份
-keycenter.cfg        界面偏好（主题 / 窗口位置 / 侧边栏宽度 / 排序），纯文本，不含密钥
+keycenter.cfg        界面偏好（主题 / 语言 / 窗口位置 / 侧边栏宽度 / 排序），纯文本，不含密钥
 ```
 
 - 换电脑或移动文件夹：把 `KeyCenter.exe` 与 `keycenter.dat` 一起复制即可；`.cfg` 可选。
@@ -183,16 +199,26 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 输出 `SELFTEST OK` 表示加密、序列化与文件读写自检通过。
 
+### 回归检查
+
+加密、保存、锁定、导出、主题、DPI 与双语覆盖的自动门禁：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\regression.ps1
+```
+
+通过时输出 `SELFTEST OK`、`LOCALIZATION/METADATA AUDIT OK` 与 `REGRESSION PASSED`。手工 UI 清单见 [REGRESSION.md](REGRESSION.md)。
+
 ## 常见问题
 
 **忘记主密码怎么办？**  
 无法找回。只能删除 `keycenter.dat` 重新开始。
 
 **数据会上传吗？**  
-不会。程序没有任何网络代码，所有数据只在本机加密保存。
+不会。程序自身不发起网络请求，所有数据只在本机加密保存；点击 GitHub 链接由系统浏览器打开。
 
 **换电脑怎么迁移？**  
-把 `KeyCenter.exe` 和 `keycenter.dat` 一起复制到新电脑即可；如果希望保留窗口和主题设置，再带上 `keycenter.cfg`。
+把 `KeyCenter.exe` 和 `keycenter.dat` 一起复制到新电脑即可；如果希望保留窗口、主题和语言设置，再带上 `keycenter.cfg`。
 
 **可以放 U 盘里用吗？**  
 可以。程序是绿色版，数据文件会保存在 exe 同目录。
