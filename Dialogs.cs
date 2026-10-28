@@ -104,10 +104,24 @@ namespace KeyCenter
             }
             Location = new Point(target.Left - margin, target.Top - margin);
             Size = new Size(w, h);
+            ApplyShadowRegion(w, h, margin, offsetY);
             bool applied = ApplyLayeredBitmap(canvas);
             if (!applied && Visible) Hide();
             SetWindowPos(Handle, target.Handle, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+
+        private void ApplyShadowRegion(int w, int h, int margin, int offsetY)
+        {
+            // 阴影窗口只保留弹窗四周的环带；中间全部挖空，避免任何透明失败时露出矩形底色。
+            using (GraphicsPath p = T.RoundPath(new RectangleF(0, 0, w, h), T.Px(12) + margin * 0.35f))
+            using (Region outer = new Region(p))
+            {
+                outer.Exclude(new Rectangle(margin, margin, target.Width, target.Height));
+                Region old = Region;
+                Region = (Region)outer.Clone();
+                if (old != null) old.Dispose();
+            }
         }
 
         private bool ApplyLayeredBitmap(Bitmap bmp)
@@ -203,7 +217,7 @@ namespace KeyCenter
             if (shownOnce || IsDisposed) return;
             shownOnce = true;
             T.SetRoundedRegion(this, T.Px(12));
-            // DWM 原生阴影负责四周投影；不再叠加独立阴影窗口，避免圆角外残留额外矩形。
+            EnsureShadow();
             int targetTop = Top;
             Top = targetTop + T.Px(8);
             Motion.Animate(this, 0f, 1f, 160, delegate(float v)
@@ -284,14 +298,6 @@ namespace KeyCenter
             {
                 int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
                 DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
-                int nc = 2; // DWMNCRP_ENABLED
-                DwmSetWindowAttribute(Handle, 2, ref nc, 4);
-                MARGINS margins = new MARGINS();
-                margins.Left = 1;
-                margins.Right = 1;
-                margins.Top = 1;
-                margins.Bottom = 1;
-                DwmExtendFrameIntoClientArea(Handle, ref margins);
                 T.SetRoundedRegion(this, T.Px(12));
             }
             catch (Exception) { }
