@@ -2,11 +2,167 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace KeyCenter
 {
+    /// <summary>无边框弹窗的独立软阴影窗口，保证上下左右都有阴影且不依赖系统标题栏。</summary>
+    internal class ShadowForm : Form
+    {
+        private const int WS_EX_LAYERED = 0x00080000;
+        private const int WS_EX_TRANSPARENT = 0x00000020;
+        private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int SWP_NOSIZE = 0x0001;
+        private const int SWP_NOMOVE = 0x0002;
+        private const int SWP_NOACTIVATE = 0x0010;
+        private const int SWP_NOOWNERZORDER = 0x0200;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT { public int X; public int Y; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SIZE { public int W; public int H; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BLENDFUNCTION { public byte Op; public byte Flags; public byte Alpha; public byte Format; }
+
+        [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
+        [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
+        [DllImport("user32.dll")] private static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pSrc, int crKey, ref BLENDFUNCTION pblend, int flags);
+        [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, int flags);
+        [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+        [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr hdc);
+        [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);
+        [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
+
+        private readonly Form target;
+        private Bitmap canvas;
+
+        public ShadowForm(Form target)
+        {
+            this.target = target;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            ShowIcon = false;
+            StartPosition = FormStartPosition.Manual;
+            BackColor = Color.Black;
+            Opacity = 1;
+            SetStyle(ControlStyles.Opaque, true);
+        }
+
+        public void Attach()
+        {
+            if (IsDisposed || target == null || target.IsDisposed) return;
+            if (!Visible) Show();
+            UpdateForTarget();
+        }
+
+        public void UpdateForTarget()
+        {
+            if (IsDisposed || target == null || target.IsDisposed) return;
+            if (!target.Visible)
+            {
+                if (Visible) Hide();
+                return;
+            }
+            if (!Visible) Show();
+            int margin = T.Px(20);
+            int w = target.Width + margin * 2;
+            int h = target.Height + margin * 2;
+            if (w <= 0 || h <= 0) return;
+            if (canvas == null || canvas.Width != w || canvas.Height != h)
+            {
+                if (canvas != null) canvas.Dispose();
+                canvas = new Bitmap(w, h, PixelFormat.Format32bppPArgb);
+            }
+            using (Graphics g = Graphics.FromImage(canvas))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Color.Transparent);
+                for (int i = 0; i < margin; i++)
+                {
+                    float inflate = margin - i;
+                    RectangleF r = new RectangleF(margin - inflate, margin - inflate,
+                        target.Width + inflate * 2f, target.Height + inflate * 2f);
+                    using (GraphicsPath p = T.RoundPath(r, T.Px(12) + inflate * 0.35f))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(6, 0, 0, 0)))
+                    {
+                        g.FillPath(b, p);
+                    }
+                }
+                // 中心区域保持透明；弹窗本身会覆盖这里，避免阴影参与命中或遮挡。
+                g.CompositingMode = CompositingMode.SourceCopy;
+                using (SolidBrush clear = new SolidBrush(Color.Transparent))
+                {
+                    g.FillRectangle(clear, margin, margin, target.Width, target.Height);
+                }
+                g.CompositingMode = CompositingMode.SourceOver;
+            }
+            Location = new Point(target.Left - margin, target.Top - margin);
+            Size = new Size(w, h);
+            bool applied = ApplyLayeredBitmap(canvas);
+            if (!applied && Visible) Hide();
+            SetWindowPos(Handle, target.Handle, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+
+        private bool ApplyLayeredBitmap(Bitmap bmp)
+        {
+            IntPtr screenDc = GetDC(IntPtr.Zero);
+            IntPtr memDc = CreateCompatibleDC(screenDc);
+            IntPtr hBitmap = bmp.GetHbitmap(Color.FromArgb(0));
+            IntPtr old = SelectObject(memDc, hBitmap);
+            bool applied = false;
+            try
+            {
+                POINT dst = new POINT();
+                dst.X = Location.X;
+                dst.Y = Location.Y;
+                SIZE size = new SIZE();
+                size.W = bmp.Width;
+                size.H = bmp.Height;
+                POINT src = new POINT();
+                src.X = 0;
+                src.Y = 0;
+                BLENDFUNCTION blend = new BLENDFUNCTION();
+                blend.Op = 0;
+                blend.Flags = 0;
+                blend.Alpha = 255;
+                blend.Format = 1;
+                applied = UpdateLayeredWindow(Handle, screenDc, ref dst, ref size, memDc, ref src, 0, ref blend, 2);
+            }
+            finally
+            {
+                SelectObject(memDc, old);
+                DeleteObject(hBitmap);
+                DeleteDC(memDc);
+                ReleaseDC(IntPtr.Zero, screenDc);
+            }
+            return applied;
+        }
+
+        protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.Style = unchecked((int)0x80000000); // WS_POPUP
+                cp.ExStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
+                return cp;
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            // 由 UpdateLayeredWindow 负责绘制
+        }
+    }
+
     internal class DarkForm : Form
     {
         private readonly List<Panel> dividers = new List<Panel>();
@@ -20,6 +176,7 @@ namespace KeyCenter
         private bool allowClose;
         private bool shownOnce;
         private DialogResult pendingDialogResult = DialogResult.None;
+        private ShadowForm shadow;
 
         /// <summary>统一弹窗标题只显示在顶部标题栏中。</summary>
         public DarkForm()
@@ -44,12 +201,34 @@ namespace KeyCenter
             base.OnShown(e);
             if (shownOnce || IsDisposed) return;
             shownOnce = true;
+            EnsureShadow();
             int targetTop = Top;
             Top = targetTop + T.Px(8);
             Motion.Animate(this, 0f, 1f, 160, delegate(float v)
             {
                 if (!IsDisposed && !Disposing) Top = targetTop + (int)Math.Round(T.Px(8) * (1f - v));
             });
+        }
+
+        private void EnsureShadow()
+        {
+            if (shadow != null || IsDisposed) return;
+            shadow = new ShadowForm(this);
+            shadow.Attach();
+            LocationChanged += delegate { if (shadow != null) shadow.UpdateForTarget(); };
+            SizeChanged += delegate { if (shadow != null) shadow.UpdateForTarget(); };
+            VisibleChanged += delegate { if (shadow != null) shadow.UpdateForTarget(); };
+            shadow.UpdateForTarget();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            if (shadow != null)
+            {
+                try { shadow.Close(); shadow.Dispose(); } catch (Exception) { }
+                shadow = null;
+            }
+            base.OnFormClosed(e);
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -81,16 +260,6 @@ namespace KeyCenter
             base.OnFormClosing(e);
         }
 
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                CreateParams cp = base.CreateParams;
-                cp.Style |= 0x00040000; // WS_THICKFRAME：让 DWM 为无边框弹窗绘制四周阴影
-                return cp;
-            }
-        }
-
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
@@ -105,26 +274,6 @@ namespace KeyCenter
                 DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
             }
             catch (Exception) { }
-        }
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == 0x0083 && m.WParam != IntPtr.Zero) // WM_NCCALCSIZE：去掉 WS_THICKFRAME 的可见边框，只保留 DWM 阴影
-            {
-                m.Result = IntPtr.Zero;
-                return;
-            }
-            if (m.Msg == 0x84) // WM_NCHITTEST：保留四周 DWM 阴影，但不允许拖动边框改变固定弹窗尺寸
-            {
-                base.WndProc(ref m);
-                int hit = m.Result.ToInt32();
-                if (hit == 10 || hit == 11 || hit == 12 || hit == 13 || hit == 14 || hit == 15 || hit == 16 || hit == 17 || hit == 20 || hit == 21)
-                {
-                    m.Result = (IntPtr)1; // HTCLIENT
-                }
-                return;
-            }
-            base.WndProc(ref m);
         }
 
         protected override void OnLoad(EventArgs e)
