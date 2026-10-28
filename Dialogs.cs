@@ -296,6 +296,8 @@ namespace KeyCenter
             base.OnHandleCreated(e);
             try
             {
+                int round = 2; // DWMWCP_ROUND
+                DwmSetWindowAttribute(Handle, 33, ref round, 4);
                 int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
                 DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
                 T.SetRoundedRegion(this, T.Px(12));
