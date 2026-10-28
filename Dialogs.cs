@@ -202,7 +202,8 @@ namespace KeyCenter
             base.OnShown(e);
             if (shownOnce || IsDisposed) return;
             shownOnce = true;
-            EnsureShadow();
+            T.SetRoundedRegion(this, T.Px(12));
+            // DWM 原生阴影负责四周投影；不再叠加独立阴影窗口，避免圆角外残留额外矩形。
             int targetTop = Top;
             Top = targetTop + T.Px(8);
             Motion.Animate(this, 0f, 1f, 160, delegate(float v)
@@ -264,15 +265,33 @@ namespace KeyCenter
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct MARGINS
+        {
+            public int Left;
+            public int Right;
+            public int Top;
+            public int Bottom;
+        }
+
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
             try
             {
-                int round = 2; // DWMWCP_ROUND
-                DwmSetWindowAttribute(Handle, 33, ref round, 4);
                 int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
                 DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
+                int nc = 2; // DWMNCRP_ENABLED
+                DwmSetWindowAttribute(Handle, 2, ref nc, 4);
+                MARGINS margins = new MARGINS();
+                margins.Left = 1;
+                margins.Right = 1;
+                margins.Top = 1;
+                margins.Bottom = 1;
+                DwmExtendFrameIntoClientArea(Handle, ref margins);
                 T.SetRoundedRegion(this, T.Px(12));
             }
             catch (Exception) { }

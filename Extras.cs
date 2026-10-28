@@ -499,8 +499,15 @@ namespace KeyCenter
 
         public void ApplyTheme()
         {
-            BackColor = T.Bg;
+            BackColor = Parent != null ? Parent.BackColor : T.Bg;
             ApplyColors();
+            Invalidate();
+        }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            BackColor = Parent != null ? Parent.BackColor : T.Bg;
             Invalidate();
         }
 
@@ -541,7 +548,7 @@ namespace KeyCenter
         {
             Graphics g = e.Graphics;
             T.Prepare(g);
-            g.Clear(BackColor);
+            g.Clear(Parent != null ? Parent.BackColor : BackColor);
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f - T.Px(3));
             T.FillRound(g, Color.FromArgb(10, 0, 0, 0), new RectangleF(1f, T.Px(4), Width - 2f, Height - T.Px(3)), T.Px(10));
             T.FillRound(g, T.Mix(T.PanelDark, T.CardHover, hoverT), r, T.Px(10));

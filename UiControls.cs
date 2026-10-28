@@ -1069,10 +1069,23 @@ namespace KeyCenter
 
         public void ApplyTheme()
         {
-            BackColor = T.Bg;
+            BackColor = BackdropColor();
             ApplyCardBackColors(hovering);
             ApplyReveal();
             Invalidate();
+        }
+
+        private Color BackdropColor()
+        {
+            return Parent != null ? Parent.BackColor : T.Bg;
+        }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            BackColor = BackdropColor();
+            Invalidate();
+            if (IsHandleCreated) AttachFormHooks();
         }
 
         private void ApplyCardBackColors(bool hover)
@@ -1139,12 +1152,6 @@ namespace KeyCenter
         {
             base.OnHandleCreated(e);
             AttachFormHooks();
-        }
-
-        protected override void OnParentChanged(EventArgs e)
-        {
-            base.OnParentChanged(e);
-            if (IsHandleCreated) AttachFormHooks();
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -1241,7 +1248,7 @@ namespace KeyCenter
         {
             Graphics g = e.Graphics;
             T.Prepare(g);
-            g.Clear(BackColor);
+            g.Clear(BackdropColor());
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f - T.Px(4));
 
             // 柔和投影（在卡片下方）
