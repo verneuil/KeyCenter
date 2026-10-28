@@ -972,6 +972,7 @@ namespace KeyCenter
         private readonly IconButton delBtn;
         private bool hovering;
         private float hoverT;
+        private Form ownerForm;
 
         public EntryCard(KeyItem item, bool revealed)
         {
@@ -1094,7 +1095,62 @@ namespace KeyCenter
 
         private bool IsCursorInside()
         {
+            if (IsDisposed || Disposing || !IsHandleCreated) return false;
             return RectangleToScreen(ClientRectangle).Contains(Cursor.Position);
+        }
+
+        private void AttachFormHooks()
+        {
+            Form f = FindForm();
+            if (ReferenceEquals(f, ownerForm)) return;
+            DetachFormHooks();
+            ownerForm = f;
+            if (ownerForm != null)
+            {
+                ownerForm.Deactivate += OwnerDeactivated;
+                ownerForm.Activated += OwnerActivated;
+            }
+        }
+
+        private void DetachFormHooks()
+        {
+            if (ownerForm == null) return;
+            try
+            {
+                ownerForm.Deactivate -= OwnerDeactivated;
+                ownerForm.Activated -= OwnerActivated;
+            }
+            catch (Exception) { }
+            ownerForm = null;
+        }
+
+        private void OwnerDeactivated(object sender, EventArgs e)
+        {
+            // 弹窗/其他窗口夺走焦点时，MouseLeave 不会到达卡片；必须主动清掉悬停态。
+            SetHover(false);
+        }
+
+        private void OwnerActivated(object sender, EventArgs e)
+        {
+            SetHover(IsCursorInside());
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            AttachFormHooks();
+        }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            if (IsHandleCreated) AttachFormHooks();
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (!Visible) SetHover(false);
         }
 
         private void SetHover(bool on)
@@ -1114,6 +1170,7 @@ namespace KeyCenter
         {
             if (disposing)
             {
+                DetachFormHooks();
                 Motion.Stop(this);
                 for (int i = 0; i < Controls.Count; i++) Motion.Stop(Controls[i]);
             }
