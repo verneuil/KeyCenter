@@ -214,7 +214,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\regression.ps1
 ```
 
-通过时输出 `SELFTEST OK`、`LOCALIZATION/METADATA AUDIT OK` 与 `REGRESSION PASSED`。手工 UI 清单见 [REGRESSION.md](REGRESSION.md)。
+通过时输出 `SELFTEST OK`、`LOCALIZATION/METADATA AUDIT OK` 与 `REGRESSION PASSED`。手工 UI 清单见 [REGRESSION.md](REGRESSION.md)。界面/弹窗自动测试统一使用 [tests/ui/README.md](tests/ui/README.md) 中的工具；测试进程会在 `finally` 中强制关闭。
 
 ## 常见问题
 

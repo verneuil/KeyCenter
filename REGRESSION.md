@@ -3,6 +3,18 @@
 > 维护者文档。目标：1.8.4 已验证的加密、保存、锁定、导出、主题、DPI 行为不被后续 UI 调整破坏。
 > Maintainer document. Goal: UI changes must not regress the encryption, save, lock, export, theme or DPI behavior verified in 1.8.4.
 
+## UI 自动化测试工具 / UI test helper
+
+做界面和弹窗相关修改时，优先使用仓库内的固定工具，不要临场写一次性脚本：
+
+- [tests/ui/README.md](tests/ui/README.md)：使用说明、函数清单和安全清理规则；
+- [tests/ui/KcUi.ps1](tests/ui/KcUi.ps1)：启动隔离测试实例、查找窗口/输入框、填数据、点按钮、`PrintWindow` 截图；
+- [tests/ui/smoke-test.ps1](tests/ui/smoke-test.ps1)：最小 UI 冒烟测试。
+
+硬性规则：测试进程必须在 `finally` 中调用 `Stop-KcUiTestApp`，它会强制结束本次进程、等待退出、复检 PID 并清理临时目录。**不允许**让测试窗口留在用户桌面上。
+
+For UI/dialog changes, use the checked-in helper instead of ad-hoc scripts. Always stop the test process in `finally`; `Stop-KcUiTestApp` force-kills, waits, verifies the PID is gone, and removes the isolated test directory.
+
 ## 1. 不可破坏的 1.8.4 基线 / Non-negotiable 1.8.4 baseline
 
 每次改动前后都必须确认以下行为仍然成立：

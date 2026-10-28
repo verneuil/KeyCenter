@@ -214,7 +214,7 @@ Automated checks for encryption, save, lock, export, theme, DPI and bilingual co
 powershell -ExecutionPolicy Bypass -File .\tests\regression.ps1
 ```
 
-A passing run prints `SELFTEST OK`, `LOCALIZATION/METADATA AUDIT OK` and `REGRESSION PASSED`. See [REGRESSION.md](REGRESSION.md) for the manual UI checklist.
+A passing run prints `SELFTEST OK`, `LOCALIZATION/METADATA AUDIT OK` and `REGRESSION PASSED`. See [REGRESSION.md](REGRESSION.md) for the manual UI checklist. UI/dialog automation uses the checked-in helper in [tests/ui/README.md](tests/ui/README.md); test processes are force-closed in `finally`.
 
 ## FAQ
 
