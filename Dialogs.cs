@@ -69,7 +69,8 @@ namespace KeyCenter
                 return;
             }
             if (!Visible) Show();
-            int margin = T.Px(20);
+            int margin = T.Px(10);
+            int offsetY = T.Px(2);
             int w = target.Width + margin * 2;
             int h = target.Height + margin * 2;
             if (w <= 0 || h <= 0) return;
@@ -85,10 +86,10 @@ namespace KeyCenter
                 for (int i = 0; i < margin; i++)
                 {
                     float inflate = margin - i;
-                    RectangleF r = new RectangleF(margin - inflate, margin - inflate,
+                    RectangleF r = new RectangleF(margin - inflate, margin - inflate + offsetY,
                         target.Width + inflate * 2f, target.Height + inflate * 2f);
-                    using (GraphicsPath p = T.RoundPath(r, T.Px(12) + inflate * 0.35f))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(6, 0, 0, 0)))
+                    using (GraphicsPath p = T.RoundPath(r, T.Px(12) + inflate * 0.22f))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(2, 0, 0, 0)))
                     {
                         g.FillPath(b, p);
                     }
