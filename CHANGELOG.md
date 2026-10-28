@@ -5,13 +5,15 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ## 1.8.6 — 窗口质感与交互细节 / Window polish & interaction details
 
+### 更新内容：
+
 - 语言切换更直接：切换语言立即弹窗提示重启，确认后先保存当前已更改的所有设置，之后再自动重启；
 - 标题栏优化：所有弹窗的标题移到顶部统一标题栏，修复部分错位的弹窗标题；
 - 窗口可读性优化：修复此前只有右侧/下侧阴影的问题，且不会在失焦时出现系统原生标题栏；
 - 基础动效优化：主窗口淡入，弹窗打开/关闭时轻微滑动，不再直接闪现；
 - 外链位置变更：软件名称右侧放置版本号与 GitHub icon；点击版本号打开 Releases 页面，点击 GitHub 图标打开本仓库。
 
-**English**
+### Highlights
 
 - More direct language switching: Switching language immediately opens a restart prompt; after confirming, all currently changed settings are saved first, and then the app restarts automatically.
 - Title bar refinement: All dialog titles move to the unified top title bar, fixing some misaligned dialog titles.
@@ -21,13 +23,15 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ## 1.8.5 — 界面精细化与双语 / UI polish & bilingual UI
 
+### 更新内容：
+
 - 主界面侧边栏、解锁界面与设置界面新增软件版本号和 GitHub 仓库入口；
 - 新增中文 / English 双语界面，可在设置中切换（重启应用后生效），覆盖全部界面、提示、错误与弹窗文案；
 - 统一全部弹窗标题栏：移除系统原生重复小标题，使用统一的弹窗标题样式，并增加自定义关闭按钮与拖动区域；
 - 改进英文计数文案的单复数（`1 Key` / `2 Keys`）；
 - 保留 1.8.4 的全部加密、保存、锁定、导出、主题与 DPI 行为；新增 `tests/regression.ps1` 回归门禁。
 
-**English**
+### Highlights
 
 - Added the app version and GitHub repository link to the main sidebar, unlock screen and Settings;
 - Added Chinese / English UI with a language switch in Settings (takes effect after restart), covering every screen, prompt, error and dialog;
@@ -37,12 +41,14 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ## 1.8.4 — 首个公开版本 / First public release
 
+### 更新内容：
+
 - 首个公开版本：集中管理 API Key 的本地加密保险箱，支持一个条目保存多条 Key、分类、搜索、排序、默认 Key 切换与明文导出；
 - 支持深色 / 浅色 / 跟随系统主题、Acrylic 玻璃背景、高 DPI 与多显示器；
 - 支持自动锁定、窗口位置与大小记忆、单实例保护；
 - 提供 `build.ps1` 一键编译脚本与 `--selftest` 加密自检。
 
-**English**
+### Highlights
 
 - First public release: a local encrypted vault for API keys, with multi-key entries, categories, search, sorting, default-key switching and plaintext export;
 - Dark / light / follow-system themes, Acrylic backdrop, high-DPI and multi-monitor support;
