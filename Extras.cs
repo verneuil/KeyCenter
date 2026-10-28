@@ -260,7 +260,7 @@ namespace KeyCenter
             this.isDefault = isDefault;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
-            BackColor = T.PanelDark;
+            BackColor = T.Bg;
             Height = T.Px(96);
 
             string display = string.IsNullOrEmpty(key.Label) ? ("Key " + (index + 1)) : key.Label.Trim();
@@ -337,9 +337,26 @@ namespace KeyCenter
             });
         }
 
+        private Color BackdropColor()
+        {
+            return Parent != null ? Parent.BackColor : T.Bg;
+        }
+
+        private void ApplyBackdrop()
+        {
+            BackColor = BackdropColor();
+            Invalidate();
+        }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            ApplyBackdrop();
+        }
+
         public void ApplyTheme()
         {
-            BackColor = T.PanelDark;
+            BackColor = BackdropColor();
             ApplyCardColors(hoverT);
             ApplyValue();
             Invalidate();
@@ -386,7 +403,7 @@ namespace KeyCenter
         {
             Graphics g = e.Graphics;
             T.Prepare(g);
-            g.Clear(BackColor);
+            g.Clear(BackdropColor());
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f - T.Px(3));
             T.FillRound(g, Color.FromArgb(12, 0, 0, 0), new RectangleF(1f, T.Px(4), Width - 2f, Height - T.Px(3)), T.Px(12));
             T.FillRound(g, T.Mix(T.Card, T.CardHover, hoverT), r, T.Px(12));

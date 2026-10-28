@@ -273,8 +273,15 @@ namespace KeyCenter
                 DwmSetWindowAttribute(Handle, 33, ref round, 4);
                 int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
                 DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
+                T.SetRoundedRegion(this, T.Px(12));
             }
             catch (Exception) { }
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (IsHandleCreated) T.SetRoundedRegion(this, T.Px(12));
         }
 
         protected override void OnLoad(EventArgs e)
@@ -333,7 +340,6 @@ namespace KeyCenter
             {
                 if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
             };
-            // 不使用 SetRoundedRegion：窗口区域裁剪会截断 DWM 的四周阴影；Win11 由 DWM 自动圆角
         }
 
         private void HeaderMouseDown(object sender, MouseEventArgs e)

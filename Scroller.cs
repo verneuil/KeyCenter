@@ -300,7 +300,7 @@ namespace KeyCenter
 
         private void LayoutRows()
         {
-            int w = scroll.ClientSize.Width - T.Px(12);
+            int w = scroll.ClientSize.Width - T.Px(24);
             if (w < T.Px(200)) w = T.Px(200);
             int y = T.Px(2);
             int h = T.Px(96);
