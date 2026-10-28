@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { Fail 'localization/metadata audit failed' }
 
 Write-Host '== Binary version and privacy scan =='
 $vi = (Get-Item $exe).VersionInfo
-if ($vi.FileVersion -ne '1.8.5.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
+if ($vi.FileVersion -ne '1.8.6.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
 $bytes = [System.IO.File]::ReadAllBytes($exe)
 $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
 $uni = [System.Text.Encoding]::Unicode.GetString($bytes)

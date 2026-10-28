@@ -76,13 +76,20 @@ No account, no cloud sync, no installer, no background service. One portable exe
 ### Bilingual UI
 
 - **简体中文 / English** interface, covering the main window, unlock/setup screen, Settings, every dialog, prompt, error, empty state and export text;
-- Switch in Settings → top-right **中文 / English**; the choice applies after restarting the app;
+- Switch in Settings → top-right **中文 / English**: a confirmation opens immediately in the target language; confirming safely saves settings and restarts, while cancelling reverts the choice and returns to Settings;
 - All text comes from one shared dictionary, so future features can add both languages in one place.
 
 ### Version and project link
 
-- The current version (for example `v1.8.5`) and a **GitHub** link appear in the main sidebar, the unlock screen and Settings;
-- Clicking GitHub opens the repository in your default browser — useful for source, issues and the latest release.
+- The current version (for example `v1.8.6`) and the official GitHub icon appear to the right of the app name;
+- Click the version to open the [Releases](https://github.com/verneuil/KeyCenter/releases) page;
+- Click the GitHub icon to open the repository — useful for source, issues and downloads.
+
+### Window and dialog polish
+
+- Every dialog uses the shared top title bar; the title appears once and the native duplicate caption is gone;
+- Dialogs have four-sided shadow, a close button, dragging, Esc-to-close and basic open/close motion;
+- Settings, category dialogs, add/edit Key, Key details, change password, export verification, confirmations and information dialogs share the same visual language.
 
 ### Plaintext export
 
@@ -132,7 +139,7 @@ No account, no cloud sync, no installer, no background service. One portable exe
 2. Put `KeyCenter.exe` in any folder and double-click it.
 3. On first launch, set a **master password** (at least 6 characters).
 4. Enter that password on subsequent launches to see all your keys.
-5. The first launch uses Chinese by default; switch to **English** in the top-right of Settings and restart the app.
+5. The first launch uses Chinese by default; switch to **English** in the top-right of Settings, confirm in the target language and restart.
 
 No installation, no registry writes. To uninstall, simply delete the executable and its data files.
 

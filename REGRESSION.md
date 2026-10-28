@@ -79,18 +79,20 @@ Tick all:
 - [ ] 深色 / 浅色 / 跟随系统；Windows 11 Acrylic；125% 与 150% DPI 来回拖动。
 - [ ] 窗口大小/位置/侧边栏宽度/排序/主题在重启后保留；恢复默认窗口大小。
 - [ ] 同一数据文件第二次启动被单实例保护。
-- [ ] 版本号与 GitHub 链接出现在：解锁界面、主界面侧边栏、设置界面；点击链接打开仓库。
-- [ ] 切换中文 / English：**所有**界面、按钮、提示、错误、空状态、弹窗文案均为目标语言；重启后生效。
-- [ ] 每个弹窗：没有系统原生小标题；标题只出现一次；统一字体/字号；右上角关闭按钮可用；Esc 可关闭；可拖动。
+- [ ] 主界面软件名右侧显示版本号与 GitHub 图标；点版本号进入 Releases 页面，点图标进入仓库；解锁/设置页版本入口正常。
+- [ ] 切换中文 / English：点击目标语言立即出现**目标语言**的确认框；确认后当前设置已保存并重启；取消后语言选择回退且仍停留在设置；点击当前语言不弹框。
+- [ ] 每个弹窗：标题只出现在顶部标题栏，内容区没有重复大标题；右上角关闭按钮可用；Esc 可关闭；可拖动；四周均有阴影。
+- [ ] 弹窗打开/关闭有基础动效；确认/取消/保存按钮的返回值正确（关闭动效不得吞掉 DialogResult）。
 - [ ] 设置 → 新建分类 / 重命名分类 / 修改主密码 / 导出验证密码 / 删除确认 / 信息提示 全部逐一检查。
 - [ ] 关闭窗口时有未保存修改会提示；保存失败重试与 Ctrl+S 路径不被 UI 改动阻断。
 
 ## 4. 本次 UI 更新专项 / This UI change specifically
 
 - 弹窗统一性的全量清单：`SettingsDialog`、`PromptDialog`、`PasswordPromptDialog`、`ChangePasswordDialog`、`EntryDialog`、`ConfirmDialog`、`InfoDialog`、`KeysDialog`。
-  Every dialog above must be checked, not only the four screenshots in the request.
-- 语言切换后重启一次，再逐页检查；重点看动态文案（数量、保存状态、错误、确认框、空状态）。
-  Restart after switching language, then re-check dynamic text (counts, save status, errors, confirms, empty states).
+  Every dialog above must be checked, not only the screenshots in the request.
+- 标题必须放在顶部标题栏，而不是内容区；内容区不允许再出现同名的重复标题。
+- 阴影必须四周可见，不能只有右侧/下侧；动画不能改变窗口位置/大小结果，也不能吞掉确认/取消结果。
+- 语言切换必须在目标语言下弹窗；确认后安全保存并重启，取消后恢复到设置窗口。
 - 版本号必须与 `Program.cs`、`app.manifest`、`CHANGELOG.md`、Release 标签一致。
   Version must match `Program.cs`, `app.manifest`, `CHANGELOG.md`, and the release tag.
 

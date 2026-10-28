@@ -107,6 +107,7 @@ $src = @(
     /out:KeyCenter.exe `
     /win32icon:keycenter.ico `
     /win32manifest:app.manifest `
+    /resource:assets\github-mark.png,KeyCenter.Resources.github.png `
     /r:System.Runtime.Serialization.dll `
     /r:System.Security.dll `
     /r:System.Windows.Forms.dll `

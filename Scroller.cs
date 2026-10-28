@@ -203,7 +203,6 @@ namespace KeyCenter
             this.defaultAction = defaultAction;
 
             Text = L.T("Key 详情");
-            SuppressHeaderTitle = true;
             ClientSize = new Size(T.Px(600), T.Px(620));
 
             Label title = UiKit.Label(item.Name, T.FontTitle, T.Text, T.Bg);

@@ -26,6 +26,8 @@ namespace KeyCenter
         private Panel bodyPanel;
         private LogoMark logo;
         private Label lblApp;
+        private Label lblVersion;
+        private GithubMarkButton githubBtn;
         private Label lblSub;
         private DarkInput txtSearch;
         private FlatButton btnAdd;
@@ -36,7 +38,6 @@ namespace KeyCenter
         private Panel sidebar;
         private Label lblCatHead;
         private Label lblSidebarFoot;
-        private Label lblAbout;
         private Label authAbout;
         private FlowLayoutPanel catHost;
         private FlatButton btnNewCat;
@@ -90,6 +91,9 @@ namespace KeyCenter
         private bool closeWhenSaved;
         private bool closeForced;
         private bool lockWhenIdle;
+        private bool restartWhenIdle;
+        private bool mainFadeClosing;
+        private bool mainAllowClose;
         private string pendingLockInfo;
         private bool exportInProgress;
         private bool closeWhenExportDone;
@@ -266,6 +270,11 @@ namespace KeyCenter
             SyncDpiAndLayout();
             if (AppConfig.WinMaximized) WindowState = FormWindowState.Maximized;
             if (!unlocked) authPw1.FocusInner();
+            Opacity = 0;
+            Motion.Animate(this, 0f, 1f, 180, delegate(float v)
+            {
+                if (!IsDisposed && !Disposing) Opacity = v;
+            });
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -317,6 +326,27 @@ namespace KeyCenter
             SortMenu.CloseCurrent();
             SaveWindowConfig();
             AppConfig.Save();
+            if (!mainAllowClose && !mainFadeClosing &&
+                e.CloseReason != CloseReason.WindowsShutDown &&
+                e.CloseReason != CloseReason.ApplicationExitCall)
+            {
+                e.Cancel = true;
+                mainFadeClosing = true;
+                Motion.Animate(this, (float)Opacity, 0f, 130, delegate(float v)
+                {
+                    if (!IsDisposed && !Disposing) Opacity = v;
+                }, delegate
+                {
+                    mainAllowClose = true;
+                    if (!IsDisposed && !Disposing) Close();
+                });
+                return;
+            }
+            if (mainFadeClosing && !mainAllowClose)
+            {
+                e.Cancel = true;
+                return;
+            }
             base.OnFormClosing(e);
         }
 
@@ -353,6 +383,18 @@ namespace KeyCenter
 
             lblApp = UiKit.Label("Key Center", T.FontTitle, T.Text, T.Bg);
             header.Controls.Add(lblApp);
+
+            lblVersion = UiKit.Label(AppInfo.Version, T.FontSmall, T.Muted, T.Bg);
+            lblVersion.Cursor = Cursors.Hand;
+            lblVersion.Name = "lblVersion";
+            lblVersion.AccessibleName = L.T("查看发布版本");
+            lblVersion.Click += delegate { AppInfo.OpenReleases(); };
+            header.Controls.Add(lblVersion);
+
+            githubBtn = new GithubMarkButton();
+            githubBtn.Name = "btnGithub";
+            githubBtn.Click += delegate { AppInfo.OpenRepo(); };
+            header.Controls.Add(githubBtn);
 
             lblSub = UiKit.Label(L.T("本地加密 · API Key 保险箱"), T.FontSmall, T.Muted, T.Bg);
             lblSub.Cursor = Cursors.Default;
@@ -441,12 +483,6 @@ namespace KeyCenter
 
             lblSidebarFoot = UiKit.Label(L.T("AES-256 · 本地存储"), T.FontSmall, T.Mix(T.Muted, T.Sidebar, 0.3f), T.Sidebar);
             sidebar.Controls.Add(lblSidebarFoot);
-
-            lblAbout = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.Sidebar);
-            lblAbout.Cursor = Cursors.Hand;
-            lblAbout.Name = "lblAbout";
-            lblAbout.Click += delegate { AppInfo.OpenRepo(); };
-            sidebar.Controls.Add(lblAbout);
 
             sidebarResize = new SidebarResizeHandle();
             sidebarResize.DragDelta = delegate(int logicalWidth)
@@ -896,12 +932,16 @@ namespace KeyCenter
         {
             if (header == null || logo == null || lblApp == null || lblSub == null ||
                 txtSearch == null || btnAdd == null || btnLock == null || btnSettings == null ||
-                btnTheme == null || btnExport == null) return;
+                btnTheme == null || btnExport == null || lblVersion == null || githubBtn == null) return;
             int hh = header.Height;
             int logoY = (hh - T.Px(38)) / 2;
             int blockTop = (hh - T.Px(52)) / 2;
             logo.SetBounds(T.Px(24), logoY, T.Px(38), T.Px(38));
-            lblApp.SetBounds(T.Px(74), blockTop, T.Px(330), T.Px(32));
+            int titleW = TextRenderer.MeasureText(lblApp.Text, lblApp.Font).Width + T.Px(2);
+            lblApp.SetBounds(T.Px(74), blockTop, titleW, T.Px(32));
+            int versionX = lblApp.Right + T.Px(8);
+            lblVersion.SetBounds(versionX, blockTop + T.Px(8), T.Px(46), T.Px(18));
+            githubBtn.SetBounds(versionX + T.Px(48), blockTop + T.Px(4), T.Px(20), T.Px(20));
             lblSub.SetBounds(T.Px(75), blockTop + T.Px(33), T.Px(330), T.Px(18));
 
             int right = header.Width - T.Px(24);
@@ -923,15 +963,14 @@ namespace KeyCenter
 
         private void LayoutSidebar()
         {
-            if (sidebar == null || catHost == null || btnNewCat == null || lblCatHead == null || lblSidebarFoot == null || lblAbout == null) return;
+            if (sidebar == null || catHost == null || btnNewCat == null || lblCatHead == null || lblSidebarFoot == null) return;
             int w = sidebar.Width;
             int h = sidebar.Height;
             lblCatHead.SetBounds(T.Px(20), T.Px(20), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
-            int catH = Math.Max(T.Px(80), h - T.Px(46) - T.Px(122));
+            int catH = Math.Max(T.Px(80), h - T.Px(46) - T.Px(104));
             catHost.SetBounds(0, T.Px(46), w, catH);
-            btnNewCat.SetBounds(T.Px(14), h - T.Px(104), Math.Max(T.Px(100), w - T.Px(28)), T.Px(38));
-            lblAbout.SetBounds(T.Px(20), h - T.Px(66), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
-            lblSidebarFoot.SetBounds(T.Px(20), h - T.Px(42), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
+            btnNewCat.SetBounds(T.Px(14), h - T.Px(86), Math.Max(T.Px(100), w - T.Px(28)), T.Px(38));
+            lblSidebarFoot.SetBounds(T.Px(20), h - T.Px(40), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
             if (sidebarResize != null)
             {
                 sidebarResize.SetBounds(w - T.Px(7), 0, T.Px(7), h);
@@ -2060,34 +2099,43 @@ namespace KeyCenter
             if (pwdChanging) { ShowToast(L.T("正在更新主密码，请稍候")); return; }
             if (vault == null) return;
             bool needRefresh = false;
-            bool langChanged = false;
+            bool restartRequested = false;
+            bool changed = false;
+            bool passwordChanged = false;
+            string newPassword = null;
             using (SettingsDialog dlg = new SettingsDialog(vault, dataPath, AppConfig.ThemeMode,
                 delegate(ThemeMode mode) { SetThemeMode(mode); },
                 delegate { ResetWindowSize(); }))
             {
                 dlg.ShowDialog(this);
-                langChanged = dlg.LanguageChanged;
-                if (dlg.PasswordChanged && !string.IsNullOrEmpty(dlg.NewPassword))
-                {
-                    BeginChangePassword(dlg.NewPassword);
-                }
-                else if (dlg.Changed)
-                {
-                    QueueSave();
-                    needRefresh = true;
-                }
+                restartRequested = dlg.RestartRequested;
+                changed = dlg.Changed;
+                passwordChanged = dlg.PasswordChanged && !string.IsNullOrEmpty(dlg.NewPassword);
+                newPassword = dlg.NewPassword;
             }
-            if (langChanged)
+            if (restartRequested)
             {
                 AppConfig.Save();
-                if (ConfirmDialog.Ask(this, L.T("应用语言"),
-                    L.T("语言设置在重启应用后生效。是否立即重启？"),
-                    L.T("立即重启"), false))
+                if (changed) QueueSave();
+                if (passwordChanged)
                 {
-                    RestartApp();
-                    return;
+                    restartWhenIdle = true;
+                    BeginChangePassword(newPassword);
                 }
-                ShowToast(L.T("语言已保存，重启应用后生效"));
+                else
+                {
+                    RestartWhenSaved();
+                }
+                return;
+            }
+            if (passwordChanged)
+            {
+                BeginChangePassword(newPassword);
+            }
+            else if (changed)
+            {
+                QueueSave();
+                needRefresh = true;
             }
             if (!needRefresh) return;
             if (selectedCategory != null && selectedCategory.Length > 0 && !vault.Categories.Contains(selectedCategory))
@@ -2096,6 +2144,43 @@ namespace KeyCenter
                 selectedCategory = null;
             BuildCategories();
             RefreshCards();
+        }
+
+        /// <summary>等待串行保存队列清空后再重启，绝不丢设置或数据。</summary>
+        private async void RestartWhenSaved()
+        {
+            if (pwdChanging)
+            {
+                restartWhenIdle = true;
+                return;
+            }
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while ((saveInProgress || savePending || dirty) && sw.ElapsedMilliseconds < 8000 && !IsDisposed)
+                {
+                    await Task.Delay(30);
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+            if (IsDisposed || Disposing) return;
+            if (pwdChanging)
+            {
+                restartWhenIdle = true;
+                return;
+            }
+            if (saveInProgress || savePending || dirty)
+            {
+                lastSaveError = L.T("设置尚未保存完成，已取消重启");
+                UpdateSaveStatus();
+                InfoDialog.Show(this, L.T("无法重启"), L.T("保存未完成，请检查磁盘后重试。"));
+                return;
+            }
+            RestartApp();
         }
 
         private async void BeginChangePassword(string newPw)
@@ -2176,6 +2261,11 @@ namespace KeyCenter
                     ShowToast(L.T("主密码已更新"));
                 }
                 catch (Exception) { }
+            }
+            if (restartWhenIdle)
+            {
+                restartWhenIdle = false;
+                if (committed) RestartWhenSaved();
             }
         }
 

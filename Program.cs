@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("便携式 API Key 保险箱")]
 [assembly: AssemblyProduct("Key Center")]
 [assembly: AssemblyCopyright("Key Center")]
-[assembly: AssemblyVersion("1.8.5.0")]
-[assembly: AssemblyFileVersion("1.8.5.0")]
+[assembly: AssemblyVersion("1.8.6.0")]
+[assembly: AssemblyFileVersion("1.8.6.0")]
 
 namespace KeyCenter
 {

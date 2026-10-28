@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace KeyCenter
@@ -741,6 +744,88 @@ namespace KeyCenter
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
             T.FillRound(g, FillColor, r, Radius);
             if (DrawBorder) T.DrawRound(g, BorderColor, r, Radius, 1f);
+        }
+    }
+
+    internal class GithubMarkButton : Control, IThemed
+    {
+        private static Image source;
+        private bool hover;
+
+        public GithubMarkButton()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            Size = new Size(T.Px(20), T.Px(20));
+            BackColor = T.Bg;
+            Cursor = Cursors.Hand;
+            TabStop = false;
+            AccessibleName = L.T("打开 GitHub 仓库");
+            if (T.Tip != null) T.Tip.SetToolTip(this, AccessibleName);
+        }
+
+        public void ApplyTheme()
+        {
+            BackColor = T.Bg;
+            Invalidate();
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            hover = true;
+            Invalidate();
+            base.OnMouseEnter(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            hover = false;
+            Invalidate();
+            base.OnMouseLeave(e);
+        }
+
+        private static Image Source
+        {
+            get
+            {
+                if (source == null)
+                {
+                    try
+                    {
+                        using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("KeyCenter.Resources.github.png"))
+                        {
+                            if (s != null) source = Image.FromStream(s);
+                        }
+                    }
+                    catch (Exception) { }
+                }
+                return source;
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            T.Prepare(g);
+            g.Clear(BackColor);
+            Image img = Source;
+            if (img == null)
+            {
+                TextRenderer.DrawText(g, "GH", T.FontSmall, ClientRectangle,
+                    hover ? T.Accent : T.TextDim, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                return;
+            }
+            Color tint = hover ? T.Accent : T.TextDim;
+            ColorMatrix cm = new ColorMatrix();
+            cm.Matrix00 = 0f; cm.Matrix11 = 0f; cm.Matrix22 = 0f; cm.Matrix33 = 1f;
+            cm.Matrix40 = tint.R / 255f;
+            cm.Matrix41 = tint.G / 255f;
+            cm.Matrix42 = tint.B / 255f;
+            using (ImageAttributes attr = new ImageAttributes())
+            {
+                attr.SetColorMatrix(cm);
+                g.DrawImage(img, new Rectangle(0, 0, Width, Height), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, attr);
+            }
         }
     }
 

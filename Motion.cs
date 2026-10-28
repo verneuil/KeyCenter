@@ -20,6 +20,7 @@ namespace KeyCenter
             public int Duration;
             public long StartedAt;
             public Action<float> Apply;
+            public Action Done;
         }
 
         private static void EnsureTimer()
@@ -32,6 +33,11 @@ namespace KeyCenter
 
         public static void Animate(object owner, float from, float to, int durationMs, Action<float> apply)
         {
+            Animate(owner, from, to, durationMs, apply, null);
+        }
+
+        public static void Animate(object owner, float from, float to, int durationMs, Action<float> apply, Action done)
+        {
             if (apply == null) return;
             Stop(owner);
             EnsureTimer();
@@ -42,6 +48,7 @@ namespace KeyCenter
             job.Duration = Math.Max(1, durationMs);
             job.StartedAt = Stopwatch.GetTimestamp();
             job.Apply = apply;
+            job.Done = done;
             jobs.Add(job);
             timer.Start();
         }
@@ -96,6 +103,16 @@ namespace KeyCenter
                     // 回调异常时移除该 Job，避免每 15ms 无限重试
                     if (i < jobs.Count && ReferenceEquals(jobs[i], job)) jobs.RemoveAt(i);
                     continue;
+                }
+                if (t >= 1f)
+                {
+                    Action done = job.Done;
+                    job.Done = null;
+                    if (done != null)
+                    {
+                        try { done(); }
+                        catch (Exception) { }
+                    }
                 }
                 // 回调里可能 Stop/StopAll，删除前必须确认索引仍指向同一个 Job
                 if (t >= 1f && i < jobs.Count && ReferenceEquals(jobs[i], job)) jobs.RemoveAt(i);

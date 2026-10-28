@@ -16,10 +16,12 @@ namespace KeyCenter
         private bool headerBuilt;
         private Point dragOffset;
         private bool draggingHeader;
+        private bool fadeClosing;
+        private bool allowClose;
+        private bool shownOnce;
+        private DialogResult pendingDialogResult = DialogResult.None;
 
-        /// <summary>为已有大标题的弹窗关闭顶部标题，仅保留关闭按钮。</summary>
-        protected bool SuppressHeaderTitle = false;
-
+        /// <summary>统一弹窗标题只显示在顶部标题栏中。</summary>
         public DarkForm()
         {
             T.Init();
@@ -37,19 +39,92 @@ namespace KeyCenter
             DoubleBuffered = true;
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            if (shownOnce || IsDisposed) return;
+            shownOnce = true;
+            int targetTop = Top;
+            Top = targetTop + T.Px(8);
+            Motion.Animate(this, 0f, 1f, 160, delegate(float v)
+            {
+                if (!IsDisposed && !Disposing) Top = targetTop + (int)Math.Round(T.Px(8) * (1f - v));
+            });
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (!allowClose && !fadeClosing &&
+                e.CloseReason != CloseReason.WindowsShutDown &&
+                e.CloseReason != CloseReason.ApplicationExitCall)
+            {
+                e.Cancel = true;
+                fadeClosing = true;
+                pendingDialogResult = DialogResult;
+                int startTop = Top;
+                Motion.Animate(this, 0f, 1f, 100, delegate(float v)
+                {
+                    if (!IsDisposed && !Disposing) Top = startTop + (int)Math.Round(T.Px(6) * v);
+                }, delegate
+                {
+                    allowClose = true;
+                    DialogResult = pendingDialogResult;
+                    if (!IsDisposed && !Disposing) Close();
+                });
+                return;
+            }
+            if (fadeClosing && !allowClose)
+            {
+                e.Cancel = true;
+                return;
+            }
+            base.OnFormClosing(e);
+        }
+
         protected override CreateParams CreateParams
         {
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ClassStyle |= 0x00020000; // CS_DROPSHADOW：无边框弹窗保留投影
+                cp.Style |= 0x00040000; // WS_THICKFRAME：让 DWM 为无边框弹窗绘制四周阴影
                 return cp;
             }
         }
 
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
+            try
+            {
+                int round = 2; // DWMWCP_ROUND
+                DwmSetWindowAttribute(Handle, 33, ref round, 4);
+                int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
+                DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
+            }
+            catch (Exception) { }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0x0083 && m.WParam != IntPtr.Zero) // WM_NCCALCSIZE：去掉 WS_THICKFRAME 的可见边框，只保留 DWM 阴影
+            {
+                m.Result = IntPtr.Zero;
+                return;
+            }
+            if (m.Msg == 0x84) // WM_NCHITTEST：保留四周 DWM 阴影，但不允许拖动边框改变固定弹窗尺寸
+            {
+                base.WndProc(ref m);
+                int hit = m.Result.ToInt32();
+                if (hit == 10 || hit == 11 || hit == 12 || hit == 13 || hit == 14 || hit == 15 || hit == 16 || hit == 17 || hit == 20 || hit == 21)
+                {
+                    m.Result = (IntPtr)1; // HTCLIENT
+                }
+                return;
+            }
+            base.WndProc(ref m);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -77,13 +152,10 @@ namespace KeyCenter
             Controls.Add(headerBar);
             headerBar.BringToFront();
 
-            if (!SuppressHeaderTitle)
-            {
-                headerTitleLbl = UiKit.Label(Text, T.FontTitle, T.Text, T.Bg);
-                headerTitleLbl.SetBounds(T.Px(28), T.Px(10), ClientSize.Width - T.Px(28) - T.Px(64), T.Px(32));
-                headerTitleLbl.Name = "dlgHeaderTitle";
-                headerBar.Controls.Add(headerTitleLbl);
-            }
+            headerTitleLbl = UiKit.Label(Text, T.FontTitle, T.Text, T.Bg);
+            headerTitleLbl.SetBounds(T.Px(28), T.Px(10), ClientSize.Width - T.Px(28) - T.Px(64), T.Px(32));
+            headerTitleLbl.Name = "dlgHeaderTitle";
+            headerBar.Controls.Add(headerTitleLbl);
 
             headerCloseBtn = UiKit.Icon(Ico.Close, L.T("关闭"));
             headerCloseBtn.Name = "btnDlgClose";
@@ -111,7 +183,7 @@ namespace KeyCenter
             {
                 if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
             };
-            T.SetRoundedRegion(this, T.Px(12));
+            // 不使用 SetRoundedRegion：窗口区域裁剪会截断 DWM 的四周阴影；Win11 由 DWM 自动圆角
         }
 
         private void HeaderMouseDown(object sender, MouseEventArgs e)
@@ -133,6 +205,13 @@ namespace KeyCenter
         private void HeaderMouseUp(object sender, MouseEventArgs e)
         {
             draggingHeader = false;
+        }
+
+        /// <summary>关闭用于“确认后立即重启”的弹窗，跳过关闭动效以保证重启时序。</summary>
+        public void CloseImmediately()
+        {
+            allowClose = true;
+            Close();
         }
 
         /// <summary>把对话框自身也切到当前主题（用于设置里实时切换外观）。</summary>
@@ -264,15 +343,10 @@ namespace KeyCenter
         public PasswordPromptDialog(string title, string desc)
         {
             Text = title;
-            SuppressHeaderTitle = true;
-            ClientSize = new Size(T.Px(480), T.Px(292));
-
-            Label cap = UiKit.Label(title, T.FontSection, T.Text, T.Bg);
-            cap.SetBounds(T.Px(28), T.Px(22), T.Px(424), T.Px(28));
-            Controls.Add(cap);
+            ClientSize = new Size(T.Px(480), T.Px(250));
 
             Label d = UiKit.Label(desc, T.FontSmall, T.Muted, T.Bg);
-            d.SetBounds(T.Px(28), T.Px(56), T.Px(424), T.Px(56));
+            d.SetBounds(T.Px(28), T.Px(16), T.Px(424), T.Px(56));
             Controls.Add(d);
 
             input = new DarkInput(false);
@@ -282,17 +356,17 @@ namespace KeyCenter
             input.Name = "txtExportPassword";
             input.Box.Name = "txtExportPassword";
             input.SetAccessibleName(L.T("主密码"));
-            input.SetBounds(T.Px(28), T.Px(122), T.Px(424), T.Px(44));
+            input.SetBounds(T.Px(28), T.Px(82), T.Px(424), T.Px(44));
             Controls.Add(input);
 
             error = UiKit.Label("", T.FontSmall, T.Danger, T.Bg);
-            error.SetBounds(T.Px(28), T.Px(174), T.Px(424), T.Px(20));
+            error.SetBounds(T.Px(28), T.Px(134), T.Px(424), T.Px(20));
             error.Name = "lblError";
             Controls.Add(error);
 
-            FlatButton cancel = MakeCancel(T.Px(230), T.Px(216));
+            FlatButton cancel = MakeCancel(T.Px(230), T.Px(184));
             FlatButton ok = UiKit.Primary(L.T("继续导出"));
-            ok.SetBounds(T.Px(328), T.Px(216), T.Px(124), T.Px(40));
+            ok.SetBounds(T.Px(328), T.Px(184), T.Px(124), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate { Submit(); };
             Controls.Add(ok);
@@ -891,6 +965,7 @@ namespace KeyCenter
         public bool Changed;
         public bool PasswordChanged;
         public bool LanguageChanged;
+        public bool RestartRequested;
         public string NewPassword;
 
         private static readonly int[] LockValues = new int[] { 0, 1, 5, 15, 30 };
@@ -904,17 +979,12 @@ namespace KeyCenter
             this.onThemeMode = onThemeMode;
             this.onResetWindow = onResetWindow;
             Text = L.T("设置");
-            SuppressHeaderTitle = true;
             ClientSize = new Size(T.Px(660), T.Px(740));
 
             int left = T.Px(30);
             int width = ClientSize.Width - left * 2;
 
             int langX = ClientSize.Width - T.Px(30) - T.Px(170);
-            Label title = UiKit.Label(L.T("设置"), T.FontH1, T.Text, T.Bg);
-            title.SetBounds(left, T.Px(18), Math.Max(T.Px(200), langX - left - T.Px(14)), T.Px(36));
-            title.Name = "lblSettingsTitle";
-            Controls.Add(title);
             Label sub = UiKit.Label(L.T("分类、安全与数据存储"), T.FontSmall, T.Muted, T.Bg);
             sub.SetBounds(left + T.Px(1), T.Px(52), Math.Max(T.Px(200), langX - left - T.Px(14)), T.Px(20));
             Controls.Add(sub);
@@ -1106,10 +1176,30 @@ namespace KeyCenter
 
         private void SetLanguage(string lang)
         {
-            if (AppConfig.Language == lang) return;
+            if (lang == AppConfig.Language) return;
+            string previous = AppConfig.Language;
+            // 先在目标语言下询问，保证点到 English 就是英文确认框
             AppConfig.Language = lang;
-            AppConfig.Save();
+            UpdateLanguageChips(lang);
+            bool restart = ConfirmDialog.Ask(this, L.T("应用语言"),
+                L.T("语言设置在重启应用后生效。是否立即重启？"),
+                L.T("立即重启"), false);
+            if (!restart)
+            {
+                AppConfig.Language = previous;
+                UpdateLanguageChips(previous);
+                LanguageChanged = false;
+                return;
+            }
             LanguageChanged = true;
+            RestartRequested = true;
+            AppConfig.Save();
+            DialogResult = DialogResult.OK;
+            CloseImmediately();
+        }
+
+        private void UpdateLanguageChips(string lang)
+        {
             for (int i = 0; i < langChips.Count; i++)
             {
                 langChips[i].IsSelected = (langChips[i].ChipValue == lang);

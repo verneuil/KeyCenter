@@ -10,6 +10,7 @@ namespace KeyCenter
     internal static class AppInfo
     {
         public const string RepoUrl = "https://github.com/verneuil/KeyCenter";
+        public const string ReleasesUrl = "https://github.com/verneuil/KeyCenter/releases";
 
         public static string Version
         {
@@ -20,15 +21,25 @@ namespace KeyCenter
                     Version v = Assembly.GetExecutingAssembly().GetName().Version;
                     return "v" + v.Major + "." + v.Minor + "." + v.Build;
                 }
-                catch (Exception) { return "v1.8.5"; }
+                catch (Exception) { return "v1.8.6"; }
             }
         }
 
         public static void OpenRepo()
         {
+            OpenUrl(RepoUrl);
+        }
+
+        public static void OpenReleases()
+        {
+            OpenUrl(ReleasesUrl);
+        }
+
+        private static void OpenUrl(string url)
+        {
             try
             {
-                Process.Start(new ProcessStartInfo(RepoUrl) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
             catch (Exception) { }
         }
@@ -313,6 +324,11 @@ namespace KeyCenter
         { "语言已保存，重启应用后生效", "Language saved. Restart the app to apply." },
         { "中文", "中文" },
         { "重启后生效", "Applies after restart" },
+        { "打开 GitHub 仓库", "Open GitHub repository" },
+        { "查看发布版本", "View releases" },
+        { "设置尚未保存完成，已取消重启", "Settings are not saved yet; restart canceled" },
+        { "无法重启", "Cannot restart" },
+        { "保存未完成，请检查磁盘后重试。", "The save did not complete. Check the disk and try again." },
 };
     }
 }
