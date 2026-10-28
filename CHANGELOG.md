@@ -5,19 +5,19 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ## 1.8.6 — 窗口质感与交互细节 / Window polish & interaction details
 
-- 语言切换改为即时确认：点击目标语言后立即用目标语言询问是否重启；确认后安全保存当前设置并重启，取消则撤销语言选择返回设置；
-- 全部弹窗标题移入顶部统一标题栏，移除内容区重复大标题；覆盖设置、导出验证、Key 详情等所有窗口；
-- 弹窗改用独立软阴影窗口绘制完整四周阴影（修复此前只有右侧/下侧阴影的问题），并加入打开/关闭基础动效；
-- 版本号与 GitHub 官方图标移到主界面软件名称右侧：点击版本号进入 Releases 页面，点击图标打开仓库；
-- 保持 1.8.4 / 1.8.5 的加密、保存、锁定、导出、主题、DPI、双语与回归门禁行为不变。
+- 语言切换更直接：切换语言立即弹窗提示重启，确认后先保存当前已更改的所有设置，之后再自动重启；
+- 标题栏优化：所有弹窗的标题移到顶部统一标题栏，修复部分错位的弹窗标题；
+- 窗口可读性优化：修复此前只有右侧/下侧阴影的问题，且不会在失焦时出现系统原生标题栏；
+- 基础动效优化：主窗口淡入，弹窗打开/关闭时轻微滑动，不再直接闪现；
+- 外链位置变更：软件名称右侧放置版本号与 GitHub icon；点击版本号打开 Releases 页面，点击 GitHub 图标打开本仓库。
 
 **English**
 
-- Language switching now confirms immediately in the target language: confirming safely saves settings and restarts; cancelling reverts the language and returns to Settings;
-- All dialog titles moved into the shared top title bar, removing duplicate content headings (Settings, export verification, Key details and more);
-- Dialogs now use a dedicated soft-shadow window for complete four-sided shadows (fixing shadows appearing only on the right/bottom) and have basic open/close motion;
-- The version and official GitHub icon moved next to the app name: the version opens Releases, the icon opens the repository;
-- All 1.8.4 / 1.8.5 encryption, save, lock, export, theme, DPI, bilingual and regression-gate behavior is preserved.
+- More direct language switching: Switching language immediately opens a restart prompt; after confirming, all currently changed settings are saved first, and then the app restarts automatically.
+- Title bar refinement: All dialog titles move to the unified top title bar, fixing some misaligned dialog titles.
+- Window readability: Fixed the previous shadow that appeared only on the right/bottom, and no native system title bar appears when the window loses focus.
+- Basic motion refinement: The main window fades in; dialogs slide slightly on open/close instead of appearing abruptly.
+- External link placement: The version number and GitHub icon are placed to the right of the app name; clicking the version opens the Releases page, and clicking the GitHub icon opens this repository.
 
 ## 1.8.5 — 界面精细化与双语 / UI polish & bilingual UI
 
