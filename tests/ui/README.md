@@ -39,8 +39,8 @@ try {
     $edits = Get-KcChildWindows -Hwnd $win.Handle |
         Where-Object { $_.Class -match 'EDIT' }
     if ($edits.Count -ge 2) {
-        Set-KcText -Hwnd $edits[0].Handle -Text '235711'
-        Set-KcText -Hwnd $edits[1].Handle -Text '235711'
+        Set-KcText -Hwnd $edits[0].Handle -Text 'test-password-123'
+        Set-KcText -Hwnd $edits[1].Handle -Text 'test-password-123'
     }
 
     # 按文字找按钮并点击

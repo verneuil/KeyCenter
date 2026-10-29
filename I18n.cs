@@ -21,7 +21,7 @@ namespace KeyCenter
                     Version v = Assembly.GetExecutingAssembly().GetName().Version;
                     return "v" + v.Major + "." + v.Minor + "." + v.Build;
                 }
-                catch (Exception) { return "v1.8.6"; }
+                catch (Exception) { return "v1.8.7"; }
             }
         }
 

@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 # KeyCenter UI test helper.
 # 使用方法见同目录 README.md；测试进程必须在 finally 中调用 Stop-KcUiTestApp。
 
@@ -37,6 +37,8 @@ public static class KcUiNative
     public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")]
     public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdc, uint flags);
+    [DllImport("user32.dll")]
+    public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
 }
 '@
 }
@@ -70,13 +72,13 @@ function Get-KcTopWindows {
     $result = New-Object System.Collections.ArrayList
     $callback = [KcUiNative+EnumProc]{
         param([IntPtr]$hWnd, [IntPtr]$lParam)
-        [uint32]$pid = 0
-        [void][KcUiNative]::GetWindowThreadProcessId($hWnd, [ref]$pid)
-        if ($pid -eq $ProcessId -and [KcUiNative]::IsWindowVisible($hWnd)) {
+        [uint32]$procId = 0
+        [void][KcUiNative]::GetWindowThreadProcessId($hWnd, [ref]$procId)
+        if ($procId -eq $ProcessId -and [KcUiNative]::IsWindowVisible($hWnd)) {
             $rect = Get-KcWindowRect -Hwnd $hWnd
             [void]$result.Add([pscustomobject]@{
                 Handle = $hWnd
-                ProcessId = [int]$pid
+                ProcessId = [int]$procId
                 Title = Get-KcWindowText -Hwnd $hWnd
                 Class = Get-KcWindowClass -Hwnd $hWnd
                 Rect = $rect
@@ -142,7 +144,13 @@ function Save-KcWindowShot {
         [Parameter(Mandatory = $true)][string]$Path
     )
     Add-Type -AssemblyName System.Drawing
-    $rect = Get-KcWindowRect -Hwnd $Hwnd
+    $oldDpi = [KcUiNative]::SetThreadDpiAwarenessContext([IntPtr](-4)) # PER_MONITOR_AWARE_V2
+    try {
+        $rect = Get-KcWindowRect -Hwnd $Hwnd
+    }
+    finally {
+        if ($oldDpi -ne [IntPtr]::Zero) { [void][KcUiNative]::SetThreadDpiAwarenessContext($oldDpi) }
+    }
     if (-not $rect -or $rect.Width -le 0 -or $rect.Height -le 0) {
         throw "无法获取窗口尺寸。"
     }
@@ -166,6 +174,8 @@ function Start-KcUiTestApp {
     param(
         [Parameter(Mandatory = $true)][string]$Exe,
         [string]$DataPath,
+        [ValidateSet('light','dark','system')][string]$Theme = 'light',
+        [ValidateSet('zh','en')][string]$Language = 'zh',
         [switch]$KeepTemp
     )
     $exePath = (Resolve-Path $Exe).Path
@@ -174,7 +184,7 @@ function Start-KcUiTestApp {
     try {
         $localExe = Join-Path $tempDir 'KeyCenter.exe'
         Copy-Item $exePath $localExe -Force
-        Set-Content -Path (Join-Path $tempDir 'keycenter.cfg') -Value "theme=light`r`nlanguage=zh" -Encoding ASCII
+        Set-Content -Path (Join-Path $tempDir 'keycenter.cfg') -Value "theme=$Theme`r`nlanguage=$Language" -Encoding ASCII
         if (-not $DataPath) { $DataPath = Join-Path $tempDir 'test.dat' }
         $proc = Start-Process -FilePath $localExe `
             -ArgumentList @('--data', $DataPath, '--no-glass') `

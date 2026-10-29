@@ -939,9 +939,15 @@ namespace KeyCenter
             logo.SetBounds(T.Px(24), logoY, T.Px(38), T.Px(38));
             int titleW = TextRenderer.MeasureText(lblApp.Text, lblApp.Font).Width + T.Px(2);
             lblApp.SetBounds(T.Px(74), blockTop, titleW, T.Px(32));
-            int versionX = lblApp.Right + T.Px(8);
-            lblVersion.SetBounds(versionX, blockTop + T.Px(8), T.Px(46), T.Px(18));
-            githubBtn.SetBounds(versionX + T.Px(48), blockTop + T.Px(4), T.Px(20), T.Px(20));
+
+            // GitHub 图标紧跟标题，版本号放在图标右侧；三者按标题垂直中心对齐。
+            int titleCenterY = blockTop + T.Px(16);
+            int ghSize = T.Px(20);
+            int ghX = lblApp.Right + T.Px(8);
+            githubBtn.SetBounds(ghX, titleCenterY - ghSize / 2, ghSize, ghSize);
+            int versionH = T.Px(18);
+            int versionX = githubBtn.Right + T.Px(8);
+            lblVersion.SetBounds(versionX, titleCenterY - versionH / 2, T.Px(46), versionH);
             lblSub.SetBounds(T.Px(75), blockTop + T.Px(33), T.Px(330), T.Px(18));
 
             int right = header.Width - T.Px(24);

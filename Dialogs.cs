@@ -176,6 +176,16 @@ namespace KeyCenter
         {
             // 由 UpdateLayeredWindow 负责绘制
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && canvas != null)
+            {
+                canvas.Dispose();
+                canvas = null;
+            }
+            base.Dispose(disposing);
+        }
     }
 
     internal class DarkForm : Form
@@ -335,24 +345,6 @@ namespace KeyCenter
                 }
                 return cp;
             }
-        }
-
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        private struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        private struct NCCALCSIZE_PARAMS
-        {
-            public RECT rgrc0;
-            public RECT rgrc1;
-            public RECT rgrc2;
-            public IntPtr lppos;
         }
 
         protected override void WndProc(ref Message m)

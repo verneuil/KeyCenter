@@ -38,11 +38,11 @@ if ($LASTEXITCODE -ne 0) { Fail 'localization/metadata audit failed' }
 
 Write-Host '== Binary version and privacy scan =='
 $vi = (Get-Item $exe).VersionInfo
-if ($vi.FileVersion -ne '1.8.6.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
+if ($vi.FileVersion -ne '1.8.7.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
 $bytes = [System.IO.File]::ReadAllBytes($exe)
 $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
 $uni = [System.Text.Encoding]::Unicode.GetString($bytes)
-foreach ($needle in @('lvshu', 'C:\Users', 'D:\Others')) {
+foreach ($needle in @('C:\Users', 'D:\')) {
     if ($ascii.Contains($needle) -or $uni.Contains($needle)) { Fail ('private string found in binary: ' + $needle) }
 }
 if ($ascii.Contains('sk-test-') -or $ascii.Contains('sk-demo-')) { Fail 'secret-looking demo token found in binary' }

@@ -3,6 +3,20 @@
 记录每个公开版本的变更，最新版本在最上方。版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 Every public release, newest first. Versioning follows [Semantic Versioning](https://semver.org/).
 
+## 1.8.7 — 弹窗稳定性与细节修复 / Dialog stability & detail fixes
+
+### 更新内容：
+
+- 弹窗失焦稳定性：修复部分弹窗失焦后出现系统原生标题栏、灰色边框和反复闪烁的问题；Windows 11 使用原生 DWM 框架、圆角与阴影，Windows 10 保留兼容回退；
+- 圆角与阴影收口：移除 Windows 11 下弹窗 Region 裁剪与独立阴影窗口的叠加，消除圆角之外的直角底残留和矩形阴影底；
+- 列表细节：修复 Key 详情卡片右侧被滚动条遮挡、卡片圆角外白色底残留，以及关闭弹窗后列表卡片残留蓝色悬停边框的问题。
+
+### Highlights
+
+- Dialog focus stability: Fixed dialogs showing a native system title bar, gray frame and repeated flicker after losing focus; Windows 11 now uses the native DWM frame, rounded corners and shadow, with a Windows 10 compatibility fallback.
+- Rounded corners and shadow cleanup: Removed the overlapping Win11 region clipping and standalone shadow window, eliminating square residues outside rounded corners and rectangular shadow backgrounds.
+- List details: Fixed the scrollbar covering the right side of Key detail cards, white square residues outside card corners, and stuck blue hover borders on list cards after closing dialogs.
+
 ## 1.8.6 — 窗口质感与交互细节 / Window polish & interaction details
 
 ### 更新内容：
