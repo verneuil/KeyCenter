@@ -7,12 +7,14 @@
 **A focused, local-first API key vault for Windows**  
 **一个专注、清爽的本地 API Key 保险箱**
 
+[![简体中文](https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-red.svg)](README.md) [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.en.md)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-3da639.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/verneuil/KeyCenter?label=release&color=4b8bf5)](https://github.com/verneuil/KeyCenter/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078d4.svg)](#requirements)
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.x-512bd4.svg)](#requirements)
 
-[中文](README.md) · **English** · [Changelog](CHANGELOG.md)
+[Changelog](CHANGELOG.md)
 
 </div>
 
