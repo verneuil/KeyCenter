@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("便携式 API Key 保险箱")]
 [assembly: AssemblyProduct("Key Center")]
 [assembly: AssemblyCopyright("Key Center")]
-[assembly: AssemblyVersion("1.8.7.0")]
-[assembly: AssemblyFileVersion("1.8.7.0")]
+[assembly: AssemblyVersion("1.8.8.0")]
+[assembly: AssemblyFileVersion("1.8.8.0")]
 
 namespace KeyCenter
 {
@@ -25,11 +25,17 @@ namespace KeyCenter
         {
             string dataPath = null;
             string selfTestLog = null;
+            int restartPid = 0;
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--data" && i + 1 < args.Length)
                 {
                     dataPath = args[++i];
+                }
+                else if (args[i] == "--restart-helper" && i + 1 < args.Length)
+                {
+                    int pid;
+                    if (int.TryParse(args[++i], out pid)) restartPid = pid;
                 }
                 else if (args[i] == "--no-glass")
                 {
@@ -56,6 +62,12 @@ namespace KeyCenter
                 dataPath = Path.Combine(Application.StartupPath, dataPath);
             }
             dataPath = Path.GetFullPath(dataPath);
+
+            if (restartPid > 0)
+            {
+                RestartHelper.WaitAndLaunch(restartPid, dataPath);
+                return;
+            }
 
             string mutexName = "KeyCenter_" + HashPath(dataPath);
             bool createdNew = true;
@@ -130,12 +142,38 @@ namespace KeyCenter
         }
     }
 
+    /// <summary>语言切换重启时等待旧实例退出，再直接启动新实例（不经过 cmd.exe）。</summary>
+    internal static class RestartHelper
+    {
+        public static void WaitAndLaunch(int processId, string dataPath)
+        {
+            try
+            {
+                Process old = Process.GetProcessById(processId);
+                old.WaitForExit(5000);
+            }
+            catch (Exception) { }
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(Application.ExecutablePath);
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.Arguments = "--data \"" + (dataPath ?? "") + "\"";
+                Process.Start(psi);
+            }
+            catch (Exception) { }
+        }
+    }
+
     /// <summary>命令行自检：验证加密、篡改检测、文件读写。</summary>
     internal static class SelfTest
     {
         public static int Run(string logPath)
         {
             StringBuilder sb = new StringBuilder();
+            string tempDir = null;
             try
             {
                 VaultData d = new VaultData();
@@ -174,13 +212,22 @@ namespace KeyCenter
                 catch (WrongPasswordException) { tamperRejected = true; }
                 Assert(tamperRejected, "tamper rejected");
 
-                string dir = Path.GetDirectoryName(Path.GetFullPath(logPath));
-                if (string.IsNullOrEmpty(dir)) dir = Application.StartupPath;
-                string file = Path.Combine(dir, "selftest.dat");
+                tempDir = Path.Combine(Path.GetTempPath(), "kc-selftest-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(tempDir);
+                string file = Path.Combine(tempDir, "selftest.dat");
                 Vault.SaveToFile(file, d, pw);
                 VaultData fromFile = Vault.LoadFromFile(file, pw);
                 Assert(fromFile.Items[0].DefaultValue == "demo-value-not-a-real-key", "file roundtrip");
-                try { File.Delete(file); } catch (Exception) { }
+
+                // 模拟保存 fallback 在主文件与临时文件之间被强杀：只剩 .safety。
+                string recoverFile = Path.Combine(tempDir, "recover.dat");
+                Vault.SaveToFile(recoverFile, d, pw);
+                File.Move(recoverFile, recoverFile + ".safety");
+                LoadResult recovered = Vault.LoadFromFileWithKeys(recoverFile, pw);
+                Assert(recovered.RecoveredFrom == recoverFile + ".safety", "recovery source");
+                Assert(File.Exists(recoverFile), "recovery restored primary");
+                Assert(recovered.Data.Items.Count == 1, "recovery data");
+                recovered.Keys.Clear();
 
                 sb.AppendLine("SELFTEST OK");
                 sb.AppendLine("clr=" + Environment.Version.ToString());
@@ -194,6 +241,11 @@ namespace KeyCenter
             }
             finally
             {
+                try
+                {
+                    if (tempDir != null && Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+                }
+                catch (Exception) { }
                 try { File.WriteAllText(logPath, sb.ToString(), Encoding.UTF8); }
                 catch (Exception) { }
             }
@@ -205,3 +257,4 @@ namespace KeyCenter
         }
     }
 }
+

@@ -794,7 +794,14 @@ namespace KeyCenter
                     {
                         using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("KeyCenter.Resources.github.png"))
                         {
-                            if (s != null) source = Image.FromStream(s);
+                            if (s != null)
+                            {
+                                using (Image img = Image.FromStream(s))
+                                {
+                                    // GDI+ 要求源流在 Image 生命周期内有效；复制到独立 Bitmap 后再关闭流。
+                                    source = new Bitmap(img);
+                                }
+                            }
                         }
                     }
                     catch (Exception) { }

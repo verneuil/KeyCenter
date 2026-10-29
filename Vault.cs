@@ -228,6 +228,7 @@ namespace KeyCenter
     {
         public VaultData Data;
         public KeyMaterial Keys;
+        public string RecoveredFrom;
     }
 
     internal static class Vault
@@ -392,23 +393,93 @@ namespace KeyCenter
 
         public static LoadResult LoadFromFileWithKeys(string path, string password)
         {
-            byte[] bytes = ReadFileChecked(path);
-            if (bytes.Length < HeaderLen + MacLen) throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
+            byte[] primary = null;
+            Exception primaryError = null;
+            try
+            {
+                primary = ReadFileChecked(path);
+            }
+            catch (Exception ex)
+            {
+                primaryError = ex;
+            }
+
+            if (primary != null)
+            {
+                try
+                {
+                    return DecryptFile(primary, password, null);
+                }
+                catch (WrongPasswordException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    primaryError = ex;
+                }
+            }
+
+            // 主文件缺失/结构损坏时，尝试上次保存留下的可恢复副本。
+            string[] candidates = new string[]
+            {
+                path + ".safety",
+                path + ".bak.new",
+                path + ".bak"
+            };
+            WrongPasswordException wrongPassword = null;
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                byte[] recovered = null;
+                try { recovered = ReadFileChecked(candidates[i]); }
+                catch (Exception) { continue; }
+                try
+                {
+                    LoadResult result = DecryptFile(recovered, password, candidates[i]);
+                    TryRestorePrimary(path, recovered);
+                    return result;
+                }
+                catch (WrongPasswordException ex) { wrongPassword = ex; }
+                catch (Exception) { }
+            }
+
+            if (wrongPassword != null) throw wrongPassword;
+            if (primaryError != null) throw primaryError;
+            throw new FileNotFoundException(L.T("数据文件不存在"), path);
+        }
+
+        private static LoadResult DecryptFile(byte[] bytes, string password, string recoveredFrom)
+        {
+            if (bytes.Length < HeaderLen + MacLen)
+                throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
             byte[] salt = new byte[SaltLen];
             Buffer.BlockCopy(bytes, 4, salt, 0, SaltLen);
             KeyMaterial km = DeriveMaterial(password, salt);
-            LoadResult r = new LoadResult();
-            r.Keys = km;
+            LoadResult result = new LoadResult();
+            result.Keys = km;
+            result.RecoveredFrom = recoveredFrom;
             try
             {
-                r.Data = Decrypt(bytes, km);
+                result.Data = Decrypt(bytes, km);
             }
             catch (Exception)
             {
                 km.Clear();
                 throw;
             }
-            return r;
+            return result;
+        }
+
+        private static void TryRestorePrimary(string path, byte[] bytes)
+        {
+            try
+            {
+                WriteAtomic(path, bytes);
+            }
+            catch (Exception)
+            {
+                // 恢复写入失败不影响本次已成功解密的数据；保留原副本供下次人工恢复。
+            }
         }
 
         private const long MaxFileBytes = 64L * 1024 * 1024;
@@ -632,6 +703,7 @@ namespace KeyCenter
         {
             if (file == null || file.Length < HeaderLen + MacLen)
                 throw new InvalidDataException(L.T("数据文件不完整或已损坏"));
+            if (file.Length > MaxFileBytes) throw new InvalidDataException(L.T("数据文件过大，已拒绝读取"));
             for (int i = 0; i < Magic.Length; i++)
             {
                 if (file[i] != Magic[i]) throw new InvalidDataException(L.T("不是 Key Center 数据文件"));

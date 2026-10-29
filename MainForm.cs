@@ -112,6 +112,7 @@ namespace KeyCenter
             this.dataPath = dataPath;
             T.Init();
             AppConfig.Load();
+            ExportJournal.CleanupStale();
             T.SetTheme(AppConfig.ResolveThemeIsDark(), false);
             T.Scale = (float)DeviceDpi / 96f;
 
@@ -1235,6 +1236,8 @@ namespace KeyCenter
                 vaultKeys = result.Keys;
                 authPw1.SetText("");
                 EnterMain(true);
+                if (!string.IsNullOrEmpty(result.RecoveredFrom))
+                    ShowToast(L.T("数据文件已从备份恢复：") + Path.GetFileName(result.RecoveredFrom));
             }
             catch (WrongPasswordException)
             {
@@ -1769,11 +1772,13 @@ namespace KeyCenter
                     return;
                 }
                 string temp = fileName + ".kc-export-" + Guid.NewGuid().ToString("N") + ".tmp";
+                CleanupStaleExportTemps(fileName);
+                ExportJournal.Begin(temp);
                 exportInProgress = true;
                 try
                 {
                     string text = await Task.Run(delegate { return BuildExportText(snapshot); });
-                    await Task.Run(delegate { File.WriteAllText(temp, text, new UTF8Encoding(true)); });
+                    await Task.Run(delegate { WriteExportTemp(temp, text); });
                     if (IsDisposed || Disposing) return;
                     if (gen != sessionGen || !unlocked)
                     {
@@ -1781,40 +1786,13 @@ namespace KeyCenter
                         ShowToast(L.T("导出期间会话已锁定，未生成明文文件"));
                         return;
                     }
-                    string backup = fileName + ".kc-old-" + Guid.NewGuid().ToString("N") + ".tmp";
                     try
                     {
-                        if (File.Exists(fileName))
-                        {
-                            try
-                            {
-                                File.Replace(temp, fileName, backup);
-                            }
-                            catch (Exception)
-                            {
-                                // 不支持原子替换时：先保留旧文件副本，再复制新文件
-                                if (!File.Exists(backup)) File.Copy(fileName, backup, true);
-                                File.Copy(temp, fileName, true);
-                            }
-                            try { if (File.Exists(backup)) File.Delete(backup); }
-                            catch (Exception) { }
-                        }
-                        else
-                        {
-                            File.Move(temp, fileName);
-                        }
+                        CommitExportFile(temp, fileName);
                         ShowToast(L.T("已导出到 ") + Path.GetFileName(fileName));
                     }
                     catch (Exception ex)
                     {
-                        // 提交失败时尽量恢复旧目标，避免留下半写文件
-                        try
-                        {
-                            if (!File.Exists(fileName) && File.Exists(backup)) File.Copy(backup, fileName, true);
-                        }
-                        catch (Exception) { }
-                        try { if (File.Exists(backup)) File.Delete(backup); }
-                        catch (Exception) { }
                         if (!IsDisposed && !Disposing) InfoDialog.Show(this, L.T("导出失败"), L.T("无法写入文件：\r\n") + ex.Message);
                     }
                 }
@@ -1824,6 +1802,7 @@ namespace KeyCenter
                 }
                 finally
                 {
+                    ExportJournal.End();
                     try { if (File.Exists(temp)) File.Delete(temp); }
                     catch (Exception) { }
                     exportInProgress = false;
@@ -1834,6 +1813,108 @@ namespace KeyCenter
                     }
                 }
             }
+        }
+
+        private static void CleanupStaleExportTemps(string target)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(target);
+                if (string.IsNullOrEmpty(dir)) dir = ".";
+                string pattern = Path.GetFileName(target) + ".kc-export-*.tmp";
+                string[] stale = Directory.GetFiles(dir, pattern);
+                for (int i = 0; i < stale.Length; i++)
+                {
+                    try { File.Delete(stale[i]); }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception) { }
+        }
+
+        private static void WriteExportTemp(string path, string text)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (StreamWriter sw = new StreamWriter(fs, new UTF8Encoding(true)))
+            {
+                sw.Write(text);
+                sw.Flush();
+                fs.Flush(true);
+            }
+        }
+
+        private static void CommitExportFile(string temp, string target)
+        {
+            if (!File.Exists(temp)) throw new FileNotFoundException(L.T("导出临时文件不存在"), temp);
+            long expected = new FileInfo(temp).Length;
+            if (!File.Exists(target))
+            {
+                File.Move(temp, target);
+                return;
+            }
+
+            string backup = target + ".kc-old-" + Guid.NewGuid().ToString("N") + ".tmp";
+            bool backupCreated = false;
+            try
+            {
+                try
+                {
+                    File.Replace(temp, target, backup, true);
+                    backupCreated = true;
+                }
+                catch (Exception)
+                {
+                    if (File.Exists(backup))
+                    {
+                        try { File.Delete(backup); }
+                        catch (Exception) { }
+                    }
+                    // 不支持 Replace 时先移走旧文件，绝不覆盖写目标。
+                    File.Move(target, backup);
+                    backupCreated = true;
+                    try
+                    {
+                        File.Move(temp, target);
+                    }
+                    catch (Exception moveEx)
+                    {
+                        TryRestoreExport(target, backup, ref backupCreated);
+                        throw new IOException(L.T("导出提交失败，旧文件备份保留在：") + backup, moveEx);
+                    }
+                }
+
+                if (new FileInfo(target).Length != expected)
+                {
+                    TryRestoreExport(target, backup, ref backupCreated);
+                    throw new IOException(L.T("导出文件写入不完整，旧文件备份保留在：") + backup);
+                }
+
+                if (backupCreated)
+                {
+                    try { File.Delete(backup); }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception)
+            {
+                if (!File.Exists(target) && backupCreated && File.Exists(backup))
+                {
+                    try { File.Move(backup, target); backupCreated = false; }
+                    catch (Exception) { }
+                }
+                throw;
+            }
+        }
+
+        private static void TryRestoreExport(string target, string backup, ref bool backupCreated)
+        {
+            try
+            {
+                if (File.Exists(target)) File.Delete(target);
+                if (File.Exists(backup)) File.Move(backup, target);
+                backupCreated = false;
+            }
+            catch (Exception) { }
         }
 
         private static string BuildExportText(VaultData data)
@@ -2105,10 +2186,9 @@ namespace KeyCenter
         {
             try
             {
-                string exe = Application.ExecutablePath;
-                string args = "--data \"" + dataPath + "\"";
-                string cmd = "/c timeout /t 2 >nul & start \"\" \"" + exe + "\" " + args;
-                Process.Start(new ProcessStartInfo("cmd.exe", cmd)
+                int pid = Process.GetCurrentProcess().Id;
+                string args = "--restart-helper " + pid.ToString() + " --data \"" + dataPath + "\"";
+                Process.Start(new ProcessStartInfo(Application.ExecutablePath, args)
                 {
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -2251,6 +2331,7 @@ namespace KeyCenter
                     return;
                 }
                 vaultKeys = newKeys;
+                newKeys = null;
                 password = newPw;
                 committed = true;
                 savedVersion = modelVersion;
@@ -2349,6 +2430,55 @@ namespace KeyCenter
                 }
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+    }
+
+    /// <summary>记录正在写出的明文临时文件，进程异常退出后下次启动可清理。</summary>
+    internal static class ExportJournal
+    {
+        private static string MarkerPath
+        {
+            get { return Path.Combine(Application.StartupPath, "keycenter.export"); }
+        }
+
+        public static void Begin(string tempPath)
+        {
+            try { File.WriteAllText(MarkerPath, tempPath, Encoding.UTF8); }
+            catch (Exception) { }
+        }
+
+        public static void End()
+        {
+            try { if (File.Exists(MarkerPath)) File.Delete(MarkerPath); }
+            catch (Exception) { }
+        }
+
+        public static void CleanupStale()
+        {
+            try
+            {
+                if (!File.Exists(MarkerPath)) return;
+                string tempPath = File.ReadAllText(MarkerPath, Encoding.UTF8).Trim();
+                if (IsExportTemp(tempPath) && File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception) { }
+            finally
+            {
+                try { if (File.Exists(MarkerPath)) File.Delete(MarkerPath); }
+                catch (Exception) { }
+            }
+        }
+
+        private static bool IsExportTemp(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !Path.IsPathRooted(path)) return false;
+            string name = Path.GetFileName(path);
+            return name.IndexOf(".kc-export-", StringComparison.OrdinalIgnoreCase) >= 0
+                && name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

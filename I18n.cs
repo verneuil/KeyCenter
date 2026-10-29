@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -21,7 +21,7 @@ namespace KeyCenter
                     Version v = Assembly.GetExecutingAssembly().GetName().Version;
                     return "v" + v.Major + "." + v.Minor + "." + v.Build;
                 }
-                catch (Exception) { return "v1.8.7"; }
+                catch (Exception) { return "v1.8.8"; }
             }
         }
 
@@ -149,6 +149,9 @@ namespace KeyCenter
         { "当前修改无法保存，已取消锁定；请检查磁盘后重试", "Changes cannot be saved, so locking was cancelled; check the disk and try again." },
         { "导出期间会话已锁定，未生成明文文件", "The session was locked during export; no plaintext file was created." },
         { "导出失败", "Export failed" },
+        { "导出临时文件不存在", "The export temporary file does not exist." },
+        { "导出提交失败，旧文件备份保留在：", "Failed to commit the export; the previous file backup was kept at: " },
+        { "导出文件写入不完整，旧文件备份保留在：", "The export was incomplete; the previous file backup was kept at: " },
         { "导出时间：", "Exported: " },
         { "导出所有 Key", "Export all Keys" },
         { "导出所有 Key（需验证主密码）", "Export all Keys (master password required)" },
@@ -232,6 +235,7 @@ namespace KeyCenter
         { "数据内容无法解析：", "Cannot parse data content: " },
         { "数据文件：", "Data file: " },
         { "数据文件不存在", "Data file not found" },
+        { "数据文件已从备份恢复：", "Data file recovered from backup: " },
         { "数据文件不完整或已损坏", "The data file is incomplete or corrupted." },
         { "数据文件过大，已拒绝读取", "The data file is too large; reading was refused." },
         { "数据文件过大，已取消保存", "The data file is too large; the save was cancelled." },
@@ -332,3 +336,4 @@ namespace KeyCenter
 };
     }
 }
+

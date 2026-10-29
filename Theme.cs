@@ -606,9 +606,62 @@ namespace KeyCenter
                 sb.AppendLine("sidebar=" + SidebarLogicalWidth);
                 sb.AppendLine("sort=" + ((int)Sort));
                 sb.AppendLine("language=" + (Language == "en" ? "en" : "zh"));
-                File.WriteAllText(CfgPath, sb.ToString());
+                WriteConfigAtomic(CfgPath, sb.ToString());
             }
             catch (Exception) { }
+        }
+
+        private static void WriteConfigAtomic(string path, string text)
+        {
+            string tmp = path + ".tmp";
+            string backup = path + ".bak";
+            try
+            {
+                using (FileStream fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (StreamWriter sw = new StreamWriter(fs, new UTF8Encoding(false)))
+                {
+                    sw.Write(text);
+                    sw.Flush();
+                    fs.Flush(true);
+                }
+
+                if (!File.Exists(path))
+                {
+                    File.Move(tmp, path);
+                    return;
+                }
+
+                try
+                {
+                    File.Replace(tmp, path, null, true);
+                }
+                catch (Exception)
+                {
+                    // 配置优先级低，但不能直接覆盖成截断文件；保留旧配置，失败则放弃本次保存。
+                    if (File.Exists(backup)) File.Delete(backup);
+                    File.Move(path, backup);
+                    try
+                    {
+                        File.Move(tmp, path);
+                        try { File.Delete(backup); }
+                        catch (Exception) { }
+                    }
+                    catch (Exception)
+                    {
+                        try
+                        {
+                            if (!File.Exists(path) && File.Exists(backup)) File.Move(backup, path);
+                        }
+                        catch (Exception) { }
+                        throw;
+                    }
+                }
+            }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); }
+                catch (Exception) { }
+            }
         }
     }
 

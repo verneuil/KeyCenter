@@ -3,6 +3,22 @@
 记录每个公开版本的变更，最新版本在最上方。版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 Every public release, newest first. Versioning follows [Semantic Versioning](https://semver.org/).
 
+## 1.8.8 — 数据恢复与可靠性修复 / Data recovery & reliability fixes
+
+### 更新内容：
+
+- 数据文件恢复：启动时自动检测并恢复 `.safety`、`.bak.new`、`.bak`，完成加密校验后再写回，避免异常保存后无法打开；
+- 导出安全：覆盖已有明文导出时改为原子替换，失败时保留旧文件备份，不再产生半写目标；导出临时文件在正常、异常和下次启动时清理；
+- 重启与配置：语言切换重启不再经过 `cmd.exe`，改为等待旧实例退出的 helper 直接启动；配置文件改为原子写入；
+- 其他加固：修复改密提交后的密钥引用边界，修正 GitHub 图标资源流生命周期，补充直接解密入口的 64MB 检查，并让自检使用隔离临时目录。
+
+### Highlights
+
+- Data recovery: On startup, the app now detects and restores `.safety`, `.bak.new` and `.bak` after validating them, so a failed save cannot leave the vault unopenable.
+- Export safety: Overwriting an existing plaintext export now uses an atomic replace and keeps the previous file as a recoverable backup, avoiding partially written targets; export temp files are cleaned on normal exit, failure and the next startup.
+- Restart and config: Language-change restart no longer goes through `cmd.exe`; a helper waits for the old instance and launches the new one directly. The config file is now written atomically.
+- Additional hardening: Fixed the post-password-change key reference edge case, corrected the GitHub icon stream lifetime, added the 64 MB check to the direct decrypt entry point, and isolated self-test files in a temporary directory.
+
 ## 1.8.7 — 弹窗稳定性与细节修复 / Dialog stability & detail fixes
 
 ### 更新内容：

@@ -1,4 +1,4 @@
-# Key Center regression gate.
+﻿# Key Center regression gate.
 # Run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\regression.ps1
 # Steps: build -> encryption self-test -> localization/metadata audit -> binary version/privacy check.
 param(
@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { Fail 'localization/metadata audit failed' }
 
 Write-Host '== Binary version and privacy scan =='
 $vi = (Get-Item $exe).VersionInfo
-if ($vi.FileVersion -ne '1.8.7.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
+if ($vi.FileVersion -ne '1.8.8.0') { Fail ('unexpected FileVersion: ' + $vi.FileVersion) }
 $bytes = [System.IO.File]::ReadAllBytes($exe)
 $ascii = [System.Text.Encoding]::ASCII.GetString($bytes)
 $uni = [System.Text.Encoding]::Unicode.GetString($bytes)
@@ -59,3 +59,4 @@ if ($fail) {
 }
 Write-Host 'REGRESSION PASSED' -ForegroundColor Green
 exit 0
+

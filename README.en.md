@@ -81,7 +81,7 @@ No account, no cloud sync, no installer, no background service. One portable exe
 
 ### Version and project link
 
-- The current version (for example `v1.8.7`) and the official GitHub icon appear to the right of the app name;
+- The current version (for example `v1.8.8`) and the official GitHub icon appear to the right of the app name;
 - Click the version to open the [Releases](https://github.com/verneuil/KeyCenter/releases) page;
 - Click the GitHub icon to open the repository — useful for source, issues and downloads.
 
@@ -242,3 +242,4 @@ This is common for unsigned single-file executables. The source is fully public,
 <div align="center">
   <sub>Built with plain C# and WinForms. No accounts, no cloud, no tracking.</sub>
 </div>
+
