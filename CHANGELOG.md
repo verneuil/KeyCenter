@@ -14,10 +14,10 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ### Highlights
 
-- Data recovery: On startup, the app now detects and restores `.safety`, `.bak.new` and `.bak` after validating them, so a failed save cannot leave the vault unopenable.
-- Export safety: Overwriting an existing plaintext export now uses an atomic replace and keeps the previous file as a recoverable backup, avoiding partially written targets; export temp files are cleaned on normal exit, failure and the next startup.
-- Restart and config: Language-change restart no longer goes through `cmd.exe`; a helper waits for the old instance and launches the new one directly. The config file is now written atomically.
-- Additional hardening: Fixed the post-password-change key reference edge case, corrected the GitHub icon stream lifetime, added the 64 MB check to the direct decrypt entry point, and isolated self-test files in a temporary directory.
+- Data recovery: On startup, Key Center now detects and restores `.safety`, `.bak.new` and `.bak` after validating them, so a failed save can no longer leave the vault unopenable.
+- Export safety: Overwriting an existing plaintext export now uses an atomic replacement; if it fails, the previous file is retained as a recoverable backup, so no partially written target is left behind. Export temp files are cleaned up on normal completion, on failure, and on the next startup.
+- Restart and config: Language-change restart no longer goes through `cmd.exe`; a helper waits for the old instance to exit and launches the new one directly. The configuration file is now written atomically.
+- Other hardening: Fixed the key reference boundary after a master-password change, corrected the lifetime of the GitHub icon resource stream, added the 64 MB check to the direct decryption entry point, and made the self-test use an isolated temporary directory.
 
 ## 1.8.7 — 弹窗稳定性与细节修复 / Dialog stability & detail fixes
 
