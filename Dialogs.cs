@@ -216,8 +216,11 @@ namespace KeyCenter
             base.OnShown(e);
             if (shownOnce || IsDisposed) return;
             shownOnce = true;
-            T.SetRoundedRegion(this, T.Px(12));
-            EnsureShadow();
+            if (!UseNativeDwmFrame)
+            {
+                T.SetRoundedRegion(this, T.Px(12));
+                EnsureShadow();
+            }
             int targetTop = Top;
             Top = targetTop + T.Px(8);
             Motion.Animate(this, 0f, 1f, 160, delegate(float v)
@@ -228,7 +231,7 @@ namespace KeyCenter
 
         private void EnsureShadow()
         {
-            if (shadow != null || IsDisposed) return;
+            if (UseNativeDwmFrame || shadow != null || IsDisposed) return;
             shadow = new ShadowForm(this);
             shadow.Attach();
             LocationChanged += delegate { if (shadow != null) shadow.UpdateForTarget(); };
@@ -291,16 +294,129 @@ namespace KeyCenter
             public int Bottom;
         }
 
+        private static readonly bool NativeDwmFrame = DetectWindows11();
+
+        private static bool DetectWindows11()
+        {
+            try
+            {
+                using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+                {
+                    if (key != null)
+                    {
+                        object build = key.GetValue("CurrentBuildNumber");
+                        int n;
+                        if (build != null && int.TryParse(build.ToString(), out n)) return n >= 22000;
+                    }
+                }
+            }
+            catch (Exception) { }
+            Version v = Environment.OSVersion.Version;
+            return v.Major > 10 || (v.Major == 10 && v.Build >= 22000);
+        }
+
+        private static bool UseNativeDwmFrame
+        {
+            get { return NativeDwmFrame; }
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                if (UseNativeDwmFrame)
+                {
+                    // Win11 原生圆角/阴影要求窗口带 frame；同时移除原生标题栏。
+                    cp.Style |= 0x00040000; // WS_THICKFRAME
+                    cp.Style &= ~0x00C00000; // 不要 WS_CAPTION / WS_DLGFRAME
+                    cp.Style &= ~0x00080000; // 不要 WS_SYSMENU
+                }
+                return cp;
+            }
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct NCCALCSIZE_PARAMS
+        {
+            public RECT rgrc0;
+            public RECT rgrc1;
+            public RECT rgrc2;
+            public IntPtr lppos;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (UseNativeDwmFrame)
+            {
+                if (m.Msg == 0x0083 && m.WParam != IntPtr.Zero) // WM_NCCALCSIZE
+                {
+                    // 保留 1px 非客户区，让 DWM 有 frame 信息可以做原生圆角/阴影；
+                    // 完全返回 0 的空非客户区会让 DWM 放弃圆角。
+                    try
+                    {
+                        NCCALCSIZE_PARAMS p = (NCCALCSIZE_PARAMS)System.Runtime.InteropServices.Marshal.PtrToStructure(
+                            m.LParam, typeof(NCCALCSIZE_PARAMS));
+                        p.rgrc0.Left += 1;
+                        p.rgrc0.Top += 1;
+                        p.rgrc0.Right -= 1;
+                        p.rgrc0.Bottom -= 1;
+                        System.Runtime.InteropServices.Marshal.StructureToPtr(p, m.LParam, false);
+                    }
+                    catch (Exception) { }
+                    m.Result = IntPtr.Zero;
+                    return;
+                }
+                if (m.Msg == 0x0084) // WM_NCHITTEST
+                {
+                    base.WndProc(ref m);
+                    int hit = m.Result.ToInt32();
+                    if (hit == 10 || hit == 11 || hit == 12 || hit == 13 ||
+                        hit == 14 || hit == 15 || hit == 16 || hit == 17 ||
+                        hit == 20 || hit == 21)
+                    {
+                        m.Result = (IntPtr)1; // HTCLIENT，固定弹窗不拖边缩放
+                    }
+                    return;
+                }
+            }
+            base.WndProc(ref m);
+        }
+
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
             try
             {
-                int round = 2; // DWMWCP_ROUND
-                DwmSetWindowAttribute(Handle, 33, ref round, 4);
-                int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
-                DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
-                T.SetRoundedRegion(this, T.Px(12));
+                if (UseNativeDwmFrame)
+                {
+                    int round = 2; // DWMWCP_ROUND
+                    DwmSetWindowAttribute(Handle, 33, ref round, 4);
+                    int noBorder = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
+                    DwmSetWindowAttribute(Handle, 34, ref noBorder, 4);
+                    int nc = 2; // DWMNCRP_ENABLED
+                    DwmSetWindowAttribute(Handle, 2, ref nc, 4);
+                    MARGINS margins = new MARGINS();
+                    margins.Left = 1;
+                    margins.Right = 1;
+                    margins.Top = 1;
+                    margins.Bottom = 1;
+                    DwmExtendFrameIntoClientArea(Handle, ref margins);
+                }
+                else
+                {
+                    T.SetRoundedRegion(this, T.Px(12));
+                }
             }
             catch (Exception) { }
         }
@@ -308,7 +424,7 @@ namespace KeyCenter
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            if (IsHandleCreated) T.SetRoundedRegion(this, T.Px(12));
+            if (!UseNativeDwmFrame && IsHandleCreated) T.SetRoundedRegion(this, T.Px(12));
         }
 
         protected override void OnLoad(EventArgs e)
