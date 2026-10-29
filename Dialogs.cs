@@ -359,21 +359,24 @@ namespace KeyCenter
         {
             if (UseNativeDwmFrame)
             {
-                if (m.Msg == 0x0083 && m.WParam != IntPtr.Zero) // WM_NCCALCSIZE
+                if (m.Msg == 0x0083) // WM_NCCALCSIZE：激活/失焦两条路径都必须处理，否则失焦会退回原生标题栏
                 {
-                    // 保留 1px 非客户区，让 DWM 有 frame 信息可以做原生圆角/阴影；
-                    // 完全返回 0 的空非客户区会让 DWM 放弃圆角。
-                    try
+                    if (m.WParam != IntPtr.Zero)
                     {
-                        NCCALCSIZE_PARAMS p = (NCCALCSIZE_PARAMS)System.Runtime.InteropServices.Marshal.PtrToStructure(
-                            m.LParam, typeof(NCCALCSIZE_PARAMS));
-                        p.rgrc0.Left += 1;
-                        p.rgrc0.Top += 1;
-                        p.rgrc0.Right -= 1;
-                        p.rgrc0.Bottom -= 1;
-                        System.Runtime.InteropServices.Marshal.StructureToPtr(p, m.LParam, false);
+                        // 保留 1px 非客户区，让 DWM 有 frame 信息可以做原生圆角/阴影；
+                        // 完全返回 0 的空非客户区会让 DWM 放弃圆角。
+                        try
+                        {
+                            NCCALCSIZE_PARAMS p = (NCCALCSIZE_PARAMS)System.Runtime.InteropServices.Marshal.PtrToStructure(
+                                m.LParam, typeof(NCCALCSIZE_PARAMS));
+                            p.rgrc0.Left += 1;
+                            p.rgrc0.Top += 1;
+                            p.rgrc0.Right -= 1;
+                            p.rgrc0.Bottom -= 1;
+                            System.Runtime.InteropServices.Marshal.StructureToPtr(p, m.LParam, false);
+                        }
+                        catch (Exception) { }
                     }
-                    catch (Exception) { }
                     m.Result = IntPtr.Zero;
                     return;
                 }
