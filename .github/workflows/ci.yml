@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows build and regression
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        shell: powershell
+        run: |
+          $PSVersionTable.PSVersion
+          [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
+          Get-Item C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe | Select-Object FullName, Length
+
+      - name: Build, self-test and regression
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\regression.ps1
