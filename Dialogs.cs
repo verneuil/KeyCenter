@@ -539,7 +539,7 @@ namespace KeyCenter
         protected FlatButton MakeCancel(int x, int y)
         {
             FlatButton b = UiKit.Ghost(L.T("取消"));
-            b.SetBounds(x, y, T.Px(88), T.Px(38));
+            b.SetBounds(x, y, T.Px(88), T.Px(40));
             b.Name = "btnCancel";
             b.DialogResult = DialogResult.Cancel;
             Controls.Add(b);
@@ -573,9 +573,9 @@ namespace KeyCenter
             error.Name = "lblError";
             Controls.Add(error);
 
-            FlatButton cancel = MakeCancel(T.Px(268), T.Px(172));
+            FlatButton cancel = MakeCancel(T.Px(266), T.Px(170));
             FlatButton ok = UiKit.Primary(L.T("确定"));
-            ok.SetBounds(T.Px(364), T.Px(172), T.Px(88), T.Px(38));
+            ok.SetBounds(T.Px(364), T.Px(170), T.Px(88), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate
             {
@@ -642,9 +642,9 @@ namespace KeyCenter
             error.Name = "lblError";
             Controls.Add(error);
 
-            FlatButton cancel = MakeCancel(T.Px(230), T.Px(184));
+            FlatButton cancel = MakeCancel(T.Px(230), T.Px(182));
             FlatButton ok = UiKit.Primary(L.T("继续导出"));
-            ok.SetBounds(T.Px(328), T.Px(184), T.Px(124), T.Px(40));
+            ok.SetBounds(T.Px(328), T.Px(182), T.Px(124), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate { Submit(); };
             Controls.Add(ok);
@@ -700,9 +700,9 @@ namespace KeyCenter
             msg.SetBounds(T.Px(28), T.Px(28), T.Px(414), T.Px(112));
             Controls.Add(msg);
 
-            MakeCancel(T.Px(258), T.Px(170));
+            MakeCancel(T.Px(256), T.Px(168));
             FlatButton ok = danger ? UiKit.DangerButton(okText) : UiKit.Primary(okText);
-            ok.SetBounds(T.Px(354), T.Px(170), T.Px(88), T.Px(38));
+            ok.SetBounds(T.Px(354), T.Px(168), T.Px(88), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate
             {
@@ -734,7 +734,7 @@ namespace KeyCenter
             Controls.Add(msg);
 
             FlatButton ok = UiKit.Primary(L.T("知道了"));
-            ok.SetBounds(T.Px(354), T.Px(148), T.Px(88), T.Px(38));
+            ok.SetBounds(T.Px(354), T.Px(146), T.Px(88), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate
             {
@@ -796,9 +796,9 @@ namespace KeyCenter
             error.SetBounds(T.Px(30), T.Px(214), T.Px(440), T.Px(20));
             Controls.Add(error);
 
-            MakeCancel(T.Px(236), T.Px(274));
+            MakeCancel(T.Px(238), T.Px(276));
             FlatButton ok = UiKit.Primary(L.T("确定修改"));
-            ok.SetBounds(T.Px(334), T.Px(274), T.Px(136), T.Px(38));
+            ok.SetBounds(T.Px(336), T.Px(276), T.Px(136), T.Px(40));
             ok.Name = "btnOk";
             ok.Click += delegate
             {
@@ -901,13 +901,13 @@ namespace KeyCenter
             BuildContent();
 
             FlatButton cancel = UiKit.Ghost(L.T("取消"));
-            cancel.SetBounds(T.Px(360), T.Px(26), T.Px(88), T.Px(40));
+            cancel.SetBounds(T.Px(450), T.Px(24), T.Px(88), T.Px(40));
             cancel.Name = "btnCancel";
             cancel.DialogResult = DialogResult.Cancel;
             actionBar.Controls.Add(cancel);
 
             saveBtn = UiKit.Primary(L.T("保存"));
-            saveBtn.SetBounds(T.Px(462), T.Px(26), T.Px(84), T.Px(40));
+            saveBtn.SetBounds(T.Px(548), T.Px(24), T.Px(84), T.Px(40));
             saveBtn.Name = "btnSave";
             saveBtn.Click += delegate { OnSave(); };
             actionBar.Controls.Add(saveBtn);
@@ -1409,14 +1409,22 @@ namespace KeyCenter
             bOpen.Click += delegate { OpenFolder(); };
             Controls.Add(bOpen);
 
-            Label about = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.Bg);
-            about.SetBounds(left, ClientSize.Height - T.Px(58), T.Px(280), T.Px(20));
+            GithubMarkButton gh = new GithubMarkButton();
+            gh.Name = "btnSettingsGithub";
+            gh.BackColor = T.Bg;
+            gh.SetBounds(left, ClientSize.Height - T.Px(56), T.Px(18), T.Px(18));
+            gh.Click += delegate { AppInfo.OpenRepo(); };
+            Controls.Add(gh);
+
+            Label about = UiKit.Label(AppInfo.Version, T.FontSmall, T.Muted, T.Bg);
+            about.SetBounds(left + T.Px(26), ClientSize.Height - T.Px(56), T.Px(46), T.Px(18));
             about.Cursor = Cursors.Hand;
-            about.Name = "lblSettingsAbout";
-            about.Click += delegate { AppInfo.OpenRepo(); };
+            about.Name = "lblSettingsVersion";
+            about.AccessibleName = L.T("查看发布版本");
+            about.Click += delegate { AppInfo.OpenReleases(); };
             Controls.Add(about);
 
-            FlatButton done = UiKit.Primary(L.T("完成"));            done.SetBounds(ClientSize.Width - T.Px(30) - T.Px(96), ClientSize.Height - T.Px(28) - T.Px(40), T.Px(96), T.Px(40));
+            FlatButton done = UiKit.Primary(L.T("完成"));            done.SetBounds(ClientSize.Width - T.Px(28) - T.Px(96), ClientSize.Height - T.Px(28) - T.Px(40), T.Px(96), T.Px(40));
             done.Name = "btnDone";
             done.Click += delegate
             {

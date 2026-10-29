@@ -300,13 +300,15 @@ namespace KeyCenter
 
         private void LayoutRows()
         {
-            int w = scroll.ClientSize.Width - T.Px(24);
+            int left = T.Px(12);
+            int scrollbarGutter = T.Px(10);
+            int w = scroll.ClientSize.Width - left * 2 - scrollbarGutter;
             if (w < T.Px(200)) w = T.Px(200);
             int y = T.Px(2);
             int h = T.Px(96);
             for (int i = 0; i < rows.Count; i++)
             {
-                rows[i].SetBounds(T.Px(2), y, w, h);
+                rows[i].SetBounds(left, y, w, h);
                 y += h + T.Px(8);
             }
             scroll.SetContentHeight(y + T.Px(8));

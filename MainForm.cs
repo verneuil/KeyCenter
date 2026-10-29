@@ -38,7 +38,8 @@ namespace KeyCenter
         private Panel sidebar;
         private Label lblCatHead;
         private Label lblSidebarFoot;
-        private Label authAbout;
+        private Label authVersion;
+        private GithubMarkButton authGithub;
         private FlowLayoutPanel catHost;
         private FlatButton btnNewCat;
         private Panel content;
@@ -482,6 +483,7 @@ namespace KeyCenter
             sidebar.Controls.Add(btnNewCat);
 
             lblSidebarFoot = UiKit.Label(L.T("AES-256 · 本地存储"), T.FontSmall, T.Mix(T.Muted, T.Sidebar, 0.3f), T.Sidebar);
+            lblSidebarFoot.TextAlign = ContentAlignment.MiddleCenter;
             sidebar.Controls.Add(lblSidebarFoot);
 
             sidebarResize = new SidebarResizeHandle();
@@ -639,12 +641,17 @@ namespace KeyCenter
             authHint.TextAlign = ContentAlignment.MiddleCenter;
             authCard.Controls.Add(authHint);
 
-            authAbout = UiKit.Label(AppInfo.Version + " · GitHub", T.FontSmall, T.Muted, T.PanelDark);
-            authAbout.TextAlign = ContentAlignment.MiddleCenter;
-            authAbout.Cursor = Cursors.Hand;
-            authAbout.Name = "authAbout";
-            authAbout.Click += delegate { AppInfo.OpenRepo(); };
-            authCard.Controls.Add(authAbout);
+            authGithub = new GithubMarkButton();
+            authGithub.Name = "btnAuthGithub";
+            authGithub.Click += delegate { AppInfo.OpenRepo(); };
+            authCard.Controls.Add(authGithub);
+
+            authVersion = UiKit.Label(AppInfo.Version, T.FontSmall, T.Muted, T.PanelDark);
+            authVersion.Cursor = Cursors.Hand;
+            authVersion.Name = "lblAuthVersion";
+            authVersion.AccessibleName = L.T("查看发布版本");
+            authVersion.Click += delegate { AppInfo.OpenReleases(); };
+            authCard.Controls.Add(authVersion);
         }
 
         private void RootPaint(object sender, PaintEventArgs e)
@@ -976,7 +983,7 @@ namespace KeyCenter
             int catH = Math.Max(T.Px(80), h - T.Px(46) - T.Px(104));
             catHost.SetBounds(0, T.Px(46), w, catH);
             btnNewCat.SetBounds(T.Px(14), h - T.Px(86), Math.Max(T.Px(100), w - T.Px(28)), T.Px(38));
-            lblSidebarFoot.SetBounds(T.Px(20), h - T.Px(40), Math.Max(T.Px(80), w - T.Px(40)), T.Px(20));
+            lblSidebarFoot.SetBounds(0, h - T.Px(40), w, T.Px(20));
             if (sidebarResize != null)
             {
                 sidebarResize.SetBounds(w - T.Px(7), 0, T.Px(7), h);
@@ -1053,7 +1060,7 @@ namespace KeyCenter
                 authErr.SetBounds(pad, T.Px(304), innerW, T.Px(22));
                 authBtn.SetBounds(pad, T.Px(332), innerW, T.Px(46));
                 authHint.SetBounds(pad, T.Px(396), innerW, T.Px(20));
-                authAbout.SetBounds(pad, T.Px(428), innerW, T.Px(18));
+                LayoutAuthBadge(innerW, pad, T.Px(428));
             }
             else
             {
@@ -1061,9 +1068,21 @@ namespace KeyCenter
                 authErr.SetBounds(pad, T.Px(242), innerW, T.Px(22));
                 authBtn.SetBounds(pad, T.Px(270), innerW, T.Px(46));
                 authHint.SetBounds(pad, T.Px(330), innerW, T.Px(20));
-                authAbout.SetBounds(pad, T.Px(354), innerW, T.Px(18));
+                LayoutAuthBadge(innerW, pad, T.Px(354));
             }
             authPw2.Visible = setup;
+        }
+
+        private void LayoutAuthBadge(int innerW, int pad, int y)
+        {
+            int gh = T.Px(18);
+            int gap = T.Px(8);
+            int versionW = T.Px(46);
+            int groupW = gh + gap + versionW;
+            int x = pad + (innerW - groupW) / 2;
+            authGithub.BackColor = T.PanelDark;
+            authGithub.SetBounds(x, y, gh, gh);
+            authVersion.SetBounds(x + gh + gap, y, versionW, T.Px(18));
         }
 
         private void PositionToast()
