@@ -328,10 +328,10 @@ namespace KeyCenter
                 CreateParams cp = base.CreateParams;
                 if (UseNativeDwmFrame)
                 {
-                    // Win11 原生圆角/阴影要求窗口带 frame；同时移除原生标题栏。
-                    cp.Style |= 0x00040000; // WS_THICKFRAME
-                    cp.Style &= ~0x00C00000; // 不要 WS_CAPTION / WS_DLGFRAME
-                    cp.Style &= ~0x00080000; // 不要 WS_SYSMENU
+                    // 用 caption frame 作为 DWM 圆角/阴影提示；不要 WS_THICKFRAME，
+                    // 否则失焦时系统会绘制一圈灰色 resize frame 并反复重绘。
+                    cp.Style |= 0x00C00000; // WS_CAPTION
+                    cp.Style &= ~0x00080000; // WS_SYSMENU
                 }
                 return cp;
             }
@@ -359,24 +359,8 @@ namespace KeyCenter
         {
             if (UseNativeDwmFrame)
             {
-                if (m.Msg == 0x0083) // WM_NCCALCSIZE：激活/失焦两条路径都必须处理，否则失焦会退回原生标题栏
+                if (m.Msg == 0x0083) // WM_NCCALCSIZE：激活/失焦都返回 0，避免 NC 区域反复重算导致闪烁
                 {
-                    if (m.WParam != IntPtr.Zero)
-                    {
-                        // 保留 1px 非客户区，让 DWM 有 frame 信息可以做原生圆角/阴影；
-                        // 完全返回 0 的空非客户区会让 DWM 放弃圆角。
-                        try
-                        {
-                            NCCALCSIZE_PARAMS p = (NCCALCSIZE_PARAMS)System.Runtime.InteropServices.Marshal.PtrToStructure(
-                                m.LParam, typeof(NCCALCSIZE_PARAMS));
-                            p.rgrc0.Left += 1;
-                            p.rgrc0.Top += 1;
-                            p.rgrc0.Right -= 1;
-                            p.rgrc0.Bottom -= 1;
-                            System.Runtime.InteropServices.Marshal.StructureToPtr(p, m.LParam, false);
-                        }
-                        catch (Exception) { }
-                    }
                     m.Result = IntPtr.Zero;
                     return;
                 }
@@ -410,9 +394,9 @@ namespace KeyCenter
                     int nc = 2; // DWMNCRP_ENABLED
                     DwmSetWindowAttribute(Handle, 2, ref nc, 4);
                     MARGINS margins = new MARGINS();
-                    margins.Left = 1;
-                    margins.Right = 1;
-                    margins.Top = 1;
+                    margins.Left = 0;
+                    margins.Right = 0;
+                    margins.Top = 0;
                     margins.Bottom = 1;
                     DwmExtendFrameIntoClientArea(Handle, ref margins);
                 }
