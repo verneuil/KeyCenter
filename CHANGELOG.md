@@ -10,14 +10,14 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 - 弹窗失焦稳定性：修复部分弹窗失焦后出现系统原生标题栏、灰色边框和反复闪烁的问题；Windows 11 使用原生 DWM 框架、圆角与阴影，Windows 10 保留兼容回退；
 - 圆角与阴影收口：移除 Windows 11 下弹窗 Region 裁剪与独立阴影窗口的叠加，消除圆角之外的直角底残留和矩形阴影底；
 - 列表细节：修复 Key 详情卡片右侧被滚动条遮挡、卡片圆角外白色底残留，以及关闭弹窗后列表卡片残留蓝色悬停边框的问题；
-- 视觉一致性：Key 详情卡片左右留白改为对称；统一所有弹窗底部操作按钮的右边距与下边距；首页、解锁页和设置页的版本号与 GitHub 入口统一为「图标 + 版本号」形式，侧边栏底部说明文字居中。
+- 视觉一致性：优化所有弹窗底部操作按钮的右边距与下边距。
 
 ### Highlights
 
-- Dialog focus stability: Fixed dialogs showing a native system title bar, gray frame and repeated flicker after losing focus; Windows 11 now uses the native DWM frame, rounded corners and shadow, with a Windows 10 compatibility fallback.
-- Rounded corners and shadow cleanup: Removed the overlapping Win11 region clipping and standalone shadow window, eliminating square residues outside rounded corners and rectangular shadow backgrounds.
-- List details: Fixed the scrollbar covering the right side of Key detail cards, white square residues outside card corners, and stuck blue hover borders on list cards after closing dialogs.
-- Visual consistency: Made Key detail card gutters symmetrical; unified the right and bottom margins of dialog action buttons; standardized the version/GitHub badge as icon + version on the main, unlock and Settings screens; centered the sidebar footer.
+- Dialog focus stability: Fixed some dialogs showing the native system title bar, gray border, and repeated flickering after losing focus; Windows 11 uses the native DWM frame, rounded corners and shadow, while Windows 10 retains a compatibility fallback.
+- Rounded corners and shadow cleanup: Removed the overlapping Win11 dialog Region clipping and standalone shadow window, eliminating square residues outside rounded corners and rectangular shadow backgrounds.
+- List details: Fixed the Key details card right side being covered by the scrollbar, white residues outside card rounded corners, and blue hover borders remaining on list cards after closing dialogs.
+- Visual consistency: Improved the right and bottom margins of action buttons at the bottom of all dialogs.
 
 ## 1.8.6 — 窗口质感与交互细节 / Window polish & interaction details
 
