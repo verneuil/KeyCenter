@@ -7,17 +7,17 @@ Every public release, newest first. Versioning follows [Semantic Versioning](htt
 
 ### 更新内容：
 
-- 数据文件恢复：启动时自动检测并恢复 `.safety`、`.bak.new`、`.bak`，完成加密校验后再写回，避免异常保存后无法打开；
-- 导出安全：覆盖已有明文导出时改为原子替换，失败时保留旧文件备份，不再产生半写目标；导出临时文件在正常、异常和下次启动时清理；
-- 重启与配置：语言切换重启不再经过 `cmd.exe`，改为等待旧实例退出的 helper 直接启动；配置文件改为原子写入；
-- 其他加固：修复改密提交后的密钥引用边界，修正 GitHub 图标资源流生命周期，补充直接解密入口的 64MB 检查，并让自检使用隔离临时目录。
+- 数据安全加固：启动时自动检测并恢复 `.safety`、`.bak.new`、`.bak`，完成加密校验后写回，避免异常保存后无法打开；
+- 导出安全加固：覆盖已有明文导出时原子替换，失败保留备份；导出临时文件在正常、异常和下次启动时清理；
+- 重启加速：语言切换重启不再经过 `cmd.exe`，改为等待旧实例退出的 helper 直接启动；配置文件改为原子写入；
+- 其他加固：修复改密提交后的密钥引用边界，修正图标资源流生命周期，补充直接解密入口的 64MB 检查，并让自检使用隔离临时目录。
 
 ### Highlights
 
-- Data recovery: On startup, Key Center now detects and restores `.safety`, `.bak.new` and `.bak` after validating them, so a failed save can no longer leave the vault unopenable.
-- Export safety: Overwriting an existing plaintext export now uses an atomic replacement; if it fails, the previous file is retained as a recoverable backup, so no partially written target is left behind. Export temp files are cleaned up on normal completion, on failure, and on the next startup.
-- Restart and config: Language-change restart no longer goes through `cmd.exe`; a helper waits for the old instance to exit and launches the new one directly. The configuration file is now written atomically.
-- Other hardening: Fixed the key reference boundary after a master-password change, corrected the lifetime of the GitHub icon resource stream, added the 64 MB check to the direct decryption entry point, and made the self-test use an isolated temporary directory.
+- Data security hardening: On startup, Key Center now automatically detects and restores `.safety`, `.bak.new` and `.bak`, validating encryption before writing back, preventing a failed save from leaving the vault unopenable.
+- Export security hardening: Overwriting an existing plaintext export now uses atomic replacement; on failure, the backup is retained. Export temp files are cleaned up on normal completion, on failure, and at the next startup.
+- Faster restart: Language-change restart no longer goes through `cmd.exe`; a helper waits for the old instance to exit and starts the new one directly. The config file is now written atomically.
+- Other hardening: Fixed the key reference boundary after a master-password change, corrected the icon resource stream lifetime, added the 64 MB check to the direct decryption entry point, and made self-test use an isolated temporary directory.
 
 ## 1.8.7 — 弹窗稳定性与细节修复 / Dialog stability & detail fixes
 
