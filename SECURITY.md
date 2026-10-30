@@ -20,9 +20,16 @@ If that is not available, open an issue containing **no sensitive information** 
 
 ## 设计边界 / Design boundaries
 
-- 所有数据仅在本地加密保存，程序不发起网络请求。
+- 保险箱数据仅在本地加密保存；用户主动导出的明文文件除外，程序不发起网络请求。
 - 主密码不保存、不上传；忘记后无法恢复。
 - Key Center 不是完整密码管理器，不应作为唯一的高价值凭据存储。
-- All data is encrypted and stored locally; the application makes no network requests.
+- The vault data is encrypted and stored locally; user-initiated plaintext exports are the exception. The application makes no network requests.
 - The master password is never stored or uploaded and cannot be recovered.
 - Key Center is not a full password manager and should not be the only store for high-value credentials.
+
+## 已接受风险 / Accepted risks
+
+- **明文导出**是用户主动操作：导出前必须重新输入主密码，界面会明确提示导出文件是明文。保险箱文件本身仍使用 AES/HMAC 加密；导出的 `.txt` 文件不加密，用户需自行保护。
+  Code scanning 会将此行为识别为 CWE-312（cleartext storage），这是导出功能的预期设计，已按 “Won't fix” 记录为已接受风险。
+- **Plaintext export** is user-initiated. The user must re-enter the master password, and the UI explicitly warns that the exported file is plaintext. The vault file itself remains AES/HMAC encrypted; the exported `.txt` is intentionally not encrypted and must be protected by the user.
+  Code scanning flags this behavior as CWE-312 (cleartext storage). It is an intentional product trade-off and is recorded as “Won't fix”.
